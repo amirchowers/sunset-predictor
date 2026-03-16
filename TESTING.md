@@ -4,7 +4,7 @@ Manual test checklist for the Sunset Predictor MVP.
 
 ## Test Environment
 
-- Python 3.10+
+- Python 3.9+
 - Dependencies installed from `requirements.txt`
 - Run from project root:
   `/Users/amir.chowers/Desktop/AI Project /sunset-predictor`

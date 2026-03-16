@@ -1,13 +1,15 @@
-"""Daily sunset capture + prediction pipeline.
+"""Legacy sunset capture + prediction pipeline.
 
 Captures frames from YouTube live webcams around sunset time.
-Technique: YouTube live thumbnails (maxresdefault_live.jpg) update
-every ~30-120s for active streams — no API key, no ffmpeg needed.
+Technique: YouTube live thumbnails (sddefault_live.jpg) update
+every ~5 minutes for active streams — no API key, no ffmpeg needed.
+
+For the main automation pipeline, use daily_sunset.py instead.
+For batch Vision AI rating, use calibrate.py.
 
 Usage:
     python3 capture_sunset.py              # capture one set now
     python3 capture_sunset.py --wait       # wait until sunset window, capture 3 sets
-    python3 capture_sunset.py --rate       # capture + rate via vision AI
 """
 
 import argparse
@@ -126,8 +128,6 @@ def main():
     parser = argparse.ArgumentParser(description="Capture sunset + prediction")
     parser.add_argument("--wait", action="store_true",
                         help="Wait until sunset window, then capture before/during/after")
-    parser.add_argument("--rate", action="store_true",
-                        help="Rate sunset via vision AI after capture")
     args = parser.parse_args()
 
     location = DEFAULT_LOCATION
@@ -240,11 +240,6 @@ def main():
     print(f"  Images:     {img_count} in {day_dir}/")
     print(f"  Rate it:    Set actual_score in {day_dir}/manifest.json")
     print()
-
-    if args.rate:
-        print("  Vision AI rating not yet configured.")
-        print("  Add ANTHROPIC_API_KEY or OPENAI_API_KEY to .env to enable.")
-        print()
 
 
 if __name__ == "__main__":

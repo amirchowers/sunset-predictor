@@ -267,37 +267,30 @@ bash launchd/uninstall.sh                    # remove daily automation
 
 ## Last Session Handoff (2026-03-16)
 
-**What changed (session 3 — Phase 2: Vision AI Calibration Loop):**
-- Phase 2 complete: Vision AI calibration loop working end-to-end
-  - `sunset_predictor/rater.py` refactored:
-    - Extracted `_parse_rating_response()` — shared JSON parser for all backends, handles markdown-wrapped JSON and embedded JSON in text
-    - Renamed Gemini function to `rate_single_image_gemini()`
-    - Added `rate_single_image_huggingface()` — uses raw `requests` to HF Inference API (GLM-4.5V via `https://router.huggingface.co/v1/chat/completions` auto-router)
-    - New `rate_single_image()` coordinator — tries Gemini first, catches quota/auth errors, falls back to HuggingFace
-    - `rate_sunset_images()` now uses fallback-aware `rate_single_image()`
-  - `calibrate.py` created: standalone batch rating CLI, `--date YYYY-MM-DD` (default: today), reads images from `calibration_data/`, runs rater, writes AI score to `manifest.json`
-  - `daily_sunset.py` wired up: `rate_images_if_possible()` now checks for either `GEMINI_API_KEY` or `HUGGINGFACE_API_KEY`, and is called after capture with results passed to `save_manifest()`
-  - `tests/test_rater.py`: 29 tests (response parsing, HuggingFace integration, fallback logic, aggregation)
-  - `tests/test_calibrate.py`: 10 tests (date parsing, image finding, manifest I/O)
-  - All 195 tests passing: `python3 -m pytest tests/ -v`
-  - First real calibration run: `calibrate.py --date 2026-02-25` rated 16/57 images before HF free credits exhausted. Sunset-window images averaged AI 4.4 vs human 6.0.
-- `HUGGINGFACE_API_KEY` added to `.env`
-- `huggingface_hub` installed in `.venv` (used only for initial testing, not imported by any project code)
+**What changed (session 4 — Phase 3: Light Cleanup):**
+- Phase 3 complete: dead code removed, docs synced with reality
+  - `sunset_predictor/config.py`: removed `import os` and dead `API_KEY = os.getenv("OPENWEATHERMAP_API_KEY")`
+  - `.env`: removed `OPENWEATHERMAP_API_KEY` line
+  - `capture_sunset.py`: removed `--rate` flag and stub (was never wired up, redundant with `calibrate.py` and `daily_sunset.py --capture`); updated docstring to mark as legacy and point to `daily_sunset.py` / `calibrate.py`
+  - `README.md`: removed `--rate` stub from Known Limitations; added `--notify` to Quick Start; removed Phase 3 from "Next" section
+  - `TESTING.md`: fixed Python version from 3.10+ to 3.9+
+  - `docs/plan.md`: checked off all Phase 3 items
+  - All 195 tests still passing
 
-**Previous sessions (Phases 0, 0.5, 1):**
+**Previous sessions (Phases 0–2):**
 - Phase 0 verified: `main.py`, `daily_sunset.py`, and `notifier.py` import all exit 0
 - Phase 0.5 complete: test infrastructure, 156 scorer/notifier tests
 - Phase 1 complete: Telegram notification, `@Sunsettlvbot`, `--notify` flag, all 4 launchd jobs
+- Phase 2 complete: Vision AI calibration loop (Gemini + HuggingFace fallback), `calibrate.py`, 195 tests
 
-**What is next (Phase 3: Light Cleanup):**
-- Remove dead `OPENWEATHERMAP_API_KEY` from `.env` and `config.py`
-- Fix `capture_sunset.py --rate` stub to use the real Gemini/HuggingFace rater
-- Update `README.md` to reflect current reality (4 jobs, Telegram, Vision AI, `calibrate.py`)
-- Update `TESTING.md` to match (4 jobs, Telegram test, Vision AI test)
-- See `docs/plan.md` Phase 3 section for full details
-
-**After Phase 3 (Phase 4):**
-- GitHub repo — `.gitignore`, git init, portfolio README, `calibration_data/example/`, `docs/future_vision.md`
+**What is next (Phase 4: GitHub Repo + Future Vision):**
+- `.gitignore` already exists — verify it excludes `.env`, `calibration_data/` (except `example/`), `__pycache__/`, `.DS_Store`, `.venv/`, `*.log`
+- `git init` and initial commit
+- Rewrite `README.md` as portfolio-grade: one-line hook, scoring model explanation (counter-intuitive insights), mermaid architecture diagram, calibration loop explanation, tech stack callout, setup guide
+- Create `calibration_data/example/` with one sanitized sample day (`predictions.json`, `manifest.json`, one sample image)
+- Write `docs/future_vision.md`: Instagram auto-posting, push notification app, multi-city expansion, community calibration flywheel
+- Push to GitHub
+- See `docs/plan.md` Phase 4 section and `docs/spec.md` Feature 4 + Feature 5 for full details
 
 **Known issues/gotchas discovered in Phase 2:**
 - `gemini-2.0-flash` has zero quota (deprecated). `gemini-2.5-flash` works (5 RPM, 20 RPD free). Already updated in `rater.py`.

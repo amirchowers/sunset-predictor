@@ -22,7 +22,6 @@ MVP is working for Tel Aviv / Israeli coast.
 - Arches camera sunset scores (6.0-6.5) closely match human rating
 
 **Next**
-- Light cleanup (Phase 3): remove dead code, fix docs
 - GitHub repo + portfolio README (Phase 4)
 
 ## Quick Start
@@ -64,8 +63,9 @@ Output: `calibration_data/backtest_results.csv`
 ### 6) Daily automated pipeline (multi-timepoint predictions + capture)
 
 ```bash
-python3 daily_sunset.py                # log a prediction now
-python3 daily_sunset.py --capture      # log prediction + capture at sunset window
+python3 daily_sunset.py                  # log a prediction now
+python3 daily_sunset.py --notify         # log prediction + send to Telegram
+python3 daily_sunset.py --capture        # log prediction + capture at sunset window
 python3 daily_sunset.py --capture --now  # log prediction + capture immediately
 ```
 
@@ -129,7 +129,6 @@ Outputs:
 - Camera pre-check is size-based, not freshness-based.
 - YouTube live thumbnails update every ~5 minutes (not real-time video).
 - Gemini 2.5 Flash free tier: 5 RPM / 20 RPD — fine for daily 4-image flow, too tight for large batch runs.
-- `capture_sunset.py --rate` flag is still a stub.
 
 ## Source Docs
 

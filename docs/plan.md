@@ -37,11 +37,11 @@ Full spec: `docs/spec.md` (same directory as this file)
 - ✅ Camera fleet reduced to `ashdod_arches` only (4 imgs/day, fits within Gemini free tier)
 - ✅ No new dependencies needed (HuggingFace called via raw `requests`)
 
-### Phase 3: Light Cleanup
-- ☐ Remove dead `OPENWEATHERMAP_API_KEY` from `.env` and `config.py`
-- ☐ Fix `capture_sunset.py --rate` stub to use the real Gemini/HuggingFace rater
-- ☐ Update `README.md` to reflect current reality (4 jobs, correct times, new features)
-- ☐ Update `TESTING.md` to match (4 jobs, Telegram test, Vision AI test)
+### Phase 3: Light Cleanup ✅
+- ✅ Remove dead `OPENWEATHERMAP_API_KEY` from `.env` and `config.py`
+- ✅ Remove `capture_sunset.py --rate` stub (redundant with `calibrate.py` and `daily_sunset.py --capture`)
+- ✅ Update `README.md` to reflect current reality (4 jobs, correct times, new features)
+- ✅ Update `TESTING.md` to match (4 jobs, Telegram test, Vision AI test, Python 3.9)
 
 ### Phase 4: GitHub Repo + Future Vision
 - ☐ Create `.gitignore`

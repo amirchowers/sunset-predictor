@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
@@ -27,5 +26,3 @@ TEL_AVIV = Location(
 )
 
 DEFAULT_LOCATION = TEL_AVIV
-
-API_KEY = os.getenv("OPENWEATHERMAP_API_KEY")

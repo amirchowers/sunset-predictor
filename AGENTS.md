@@ -99,7 +99,7 @@ Keep it practical, shippable, and simple. Prefer interpretable scoring over prem
 
 **Scoring model is v1:** All weights are hand-tuned. First calibration: predicted 6.8 vs human-rated 6.0. Western sky factor overscores when scattered low/mid clouds exist without cirrus.
 
-**Instagram (instagrapi):** Uses unofficial Instagram API. One post/day from a dedicated account is safe. Store credentials in `.env` (never commit). If Instagram challenges the login (e.g., from a new IP), you may need to verify via the app. The `--dry-run` flag generates images and captions without posting — use for testing.
+**Instagram (instagrapi):** Uses unofficial Instagram API. One post/day from a dedicated account is safe. Store credentials in `.env` (never commit). If Instagram challenges the login (e.g., from a new IP), you may need to verify via the app. The `--dry-run` flag generates images and captions without posting — use for testing. **Python 3.9 fix required:** instagrapi 2.x uses `str | None` syntax (Python 3.10+). Two files need manual patching after install: `instagrapi/types.py` (line 451: `ClipsMetadata | dict` → `Union[ClipsMetadata, dict]`) and `instagrapi/__init__.py` (3 occurrences of `X | None` → `Optional[X]`, plus add `from typing import Optional`). If you reinstall instagrapi, you must re-apply these patches.
 
 **Dead ends documented (don't retry):**
 - OpenWeatherMap: slow key activation, worse cloud data than Open-Meteo
@@ -275,51 +275,46 @@ bash launchd/install.sh                      # install daily automation
 bash launchd/uninstall.sh                    # remove daily automation
 ```
 
-## Last Session Handoff (2026-03-16)
+## Last Session Handoff (2026-03-16, session 6)
 
-**What changed (session 5 — Phase 4 + Instagram Bot):**
-- Phase 4 complete: GitHub repo live at https://github.com/amirchowers/sunset-predictor
-  - Portfolio-grade README with scoring model, mermaid diagram, setup guide
-  - `calibration_data/example/` with sanitized sample day
-  - `docs/future_vision.md` with 4 expansion ideas
-  - `.env.example` for onboarding
-  - `.gitignore` fixed to properly track example/ while excluding other calibration data
-- Instagram auto-posting feature built and committed:
-  - `sunset_predictor/poster.py`: prediction card generation (Pillow), Gemini lifestyle tips (rotating themes), Instagram posting (instagrapi), score overlay, captions
-  - `post_sunset.py`: standalone CLI (`--prediction`, `--photo`, `--dry-run`)
-  - `daily_sunset.py`: new `--post` flag wired into noon flow only (prediction card). Tip generated once, shared to both Telegram and Instagram.
-  - `launchd/com.sunset.noon.plist`: added `--post` flag
-  - Evening auto-post REMOVED from capture flow — webcam frames (640x480) too low-res for Instagram. Capture still runs for calibration.
-  - Telegram score bar updated from black blocks to warm orange/white circles
-  - Telegram message now includes Gemini lifestyle tip (when available)
-  - Evening post threshold set to 6.5 (only "Worth making plans for" sunsets)
-  - Caption CTA: "Share your sunset photo tonight and tag us!" (encourages UGC instead of posting low-res webcam frames)
-  - 228 tests total (31 poster + 26 notifier), all passing
-  - Dry-run tested: prediction card generates correctly with Gemini tips
-  - Pushed to GitHub
+**What changed (session 6 — Instagram Go-Live):**
+- Instagram account created: `@sunsetpredictor`
+  - Bio: "Tonight's sunset: meh or magic? We'll tell you by noon. Follow for daily Tel Aviv sunset forecasts."
+  - Registered with work email (amir.chowers@unity3d.com) — user plans to swap to personal email before leaving the company
+  - 2FA is OFF (required for instagrapi API login)
+  - Account warmed up: profile pic set, follows added, bio written
+- First live Instagram post succeeded: prediction card with 7.6/10 score and hardcoded lifestyle tip
+- `INSTAGRAM_USERNAME` and `INSTAGRAM_PASSWORD` added to `.env`
+- instagrapi 2.3.0 installed with Python 3.9 compatibility patches (see gotchas below)
+- AGENTS.md updated with instagrapi patching instructions
+- launchd jobs confirmed already loaded with `--post` on noon plist — no reinstall needed
 
-**Previous sessions (Phases 0–3):**
+**Previous sessions (Phases 0–5):**
 - Phase 0 verified: `main.py`, `daily_sunset.py`, and `notifier.py` import all exit 0
 - Phase 0.5 complete: test infrastructure, 156 scorer/notifier tests
 - Phase 1 complete: Telegram notification, `@Sunsettlvbot`, `--notify` flag, all 4 launchd jobs
 - Phase 2 complete: Vision AI calibration loop (Gemini + HuggingFace fallback), `calibrate.py`, 195 tests
 - Phase 3 complete: dead code removed, docs synced with reality
+- Phase 4 complete: GitHub repo live at https://github.com/amirchowers/sunset-predictor
+- Session 5: Instagram auto-posting feature built, committed, pushed. 228 tests passing.
+- Session 6: Instagram account created, first live post successful
 
 **What is next:**
-- User needs to create Instagram account and add `INSTAGRAM_USERNAME` and `INSTAGRAM_PASSWORD` to `.env`
-- Reinstall launchd jobs: `bash launchd/uninstall.sh && bash launchd/install.sh` (to pick up `--post` on noon job)
-- Test live Instagram posting: `python3 post_sunset.py --prediction` (not dry-run)
-- Tomorrow's noon job will be the first to include a Gemini lifestyle tip in Telegram (quota resets daily, was exhausted during testing today)
-- The Instagram page strategy: noon prediction card is the main product, user manually uploads good sunset photos when they have them, CTA encourages followers to share their own photos
+- Verify Gemini lifestyle tip appears in Telegram noon message (2026-03-17 noon — quota was exhausted 2026-03-16 from testing, resets daily)
+- After confirming Telegram tip looks good: noon launchd job should auto-post to Instagram daily (already configured)
+- Push latest changes to GitHub (AGENTS.md updates from this session)
+- Future design work: improve prediction card branding, typography, color palette, logo
+- Future: swap Instagram email from work to personal before user leaves company
 
 **GitHub push credentials:**
 - User has a fine-grained PAT (Contents: Read and write) — can be regenerated at https://github.com/settings/personal-access-tokens/new
 - Push method: temporarily set remote URL with token, push, then reset URL to clean version
 - `git remote set-url origin https://amirchowers:<TOKEN>@github.com/amirchowers/sunset-predictor.git && git push && git remote set-url origin https://github.com/amirchowers/sunset-predictor.git`
 
-**Known issues/gotchas discovered in Phase 2:**
+**Known issues/gotchas (cumulative):**
 - `gemini-2.0-flash` has zero quota (deprecated). `gemini-2.5-flash` works (5 RPM, 20 RPD free). Already updated in `rater.py`.
 - Gemini 2.5 uses thinking tokens — needs `max_output_tokens: 1024` (not 256) or the content may be truncated.
+- Gemini lifestyle tip quota: 20 RPD free tier. If exhausted from testing, tips silently skip until next day. The noon Telegram/Instagram post still works, just without the tip line.
 - HuggingFace credits are not permanent — they reset periodically. 402 errors are temporary.
 - GLM-4.5V uses a thinking mode: it has `reasoning_content` (thinking trace) and `content` (answer). When content is empty, we fall back to `reasoning_content`.
 - GLM-4.5V sometimes wraps JSON in text — the `_parse_rating_response` regex fallback handles this.
@@ -329,9 +324,19 @@ bash launchd/uninstall.sh                    # remove daily automation
 - `google.generativeai` library is deprecated — Google recommends switching to `google.genai`. Works for now but should migrate in a future phase.
 - Python 3.9 on this Mac — use `Optional[X]` not `X | None`.
 - `_score_western_near` uses strict `>` comparisons (not `>=`) — boundary values at exact thresholds fall to the next bucket. Tests document this precisely.
+- **instagrapi 2.3.0 + Python 3.9:** requires manual patching after install. Two files: (1) `instagrapi/types.py` line 451: change `Optional[ClipsMetadata | dict]` → `Optional[Union[ClipsMetadata, dict]]`, (2) `instagrapi/__init__.py`: add `from typing import Optional`, change 3 occurrences of `str | None` and `list | None` to `Optional[str]` / `Optional[list]`. If instagrapi is ever reinstalled or upgraded, these patches must be re-applied.
+- **instagrapi 1.x is dead:** Instagram returns `unsupported_version` for the API version used by instagrapi <2.0. Don't downgrade.
+- **Instagram first login challenge:** New accounts + first API login triggers a challenge. User must approve "Was this you?" from the Instagram app before API login succeeds. After the first successful login, subsequent logins are smooth.
 
 **Troubleshooting: missing Telegram notifications:**
 - launchd only fires when the Mac is awake and running. If the user reports not receiving a noon Telegram notification, the most likely cause is the Mac was asleep or lid-closed at 12:00.
 - macOS will catch up on the most recent missed `StartCalendarInterval` job when the Mac wakes — but only the latest missed one, not all.
 - If the Mac was powered off at the scheduled time, the job is missed entirely with no catch-up.
 - The 16:00 capture job is most at risk since it may fall after the user closes the laptop for the day.
+
+**Troubleshooting: Instagram posting failures:**
+- Check `.env` has `INSTAGRAM_USERNAME` and `INSTAGRAM_PASSWORD` set
+- Test login: `python3 -c "from dotenv import load_dotenv; load_dotenv(); from instagrapi import Client; import os; cl = Client(); cl.login(os.getenv('INSTAGRAM_USERNAME'), os.getenv('INSTAGRAM_PASSWORD')); print('OK')"`
+- If challenge error: open Instagram app, approve login, retry
+- If `unsupported operand type(s) for |`: instagrapi patches were lost (reinstall or upgrade wiped them). Re-apply the Python 3.9 patches documented above.
+- If `unsupported_version`: you're on instagrapi <2.0. Upgrade to 2.x and patch.

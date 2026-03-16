@@ -281,6 +281,8 @@ def main():
                         help="With --capture: capture immediately instead of waiting for sunset window")
     parser.add_argument("--notify", action="store_true",
                         help="Send prediction to Telegram")
+    parser.add_argument("--post", action="store_true",
+                        help="Post to Instagram (prediction card at noon, sunset photo after capture)")
     args = parser.parse_args()
 
     location = DEFAULT_LOCATION
@@ -338,9 +340,52 @@ def main():
 
     log.info(f"Data saved to {day_dir}/")
 
+    # --- Lifestyle Tip ---
+    tip = None
+    if args.notify or args.post:
+        tip = _generate_lifestyle_tip(entry)
+
     # --- Notify ---
     if args.notify:
-        send_prediction(result, verdict, sun_info, location)
+        send_prediction(result, verdict, sun_info, location, tip=tip)
+
+    # --- Instagram ---
+    if args.post:
+        _post_prediction_card(entry, day_dir, tip)
+
+
+def _generate_lifestyle_tip(entry: dict):
+    """Generate a Gemini lifestyle tip. Returns None if unavailable."""
+    try:
+        from sunset_predictor.poster import generate_tip
+        tip = generate_tip(entry)
+        if tip:
+            log.info(f"Lifestyle tip: {tip}")
+        return tip
+    except ImportError:
+        return None
+
+
+def _post_prediction_card(entry: dict, day_dir: Path, tip):
+    """Generate and post a prediction card to Instagram."""
+    try:
+        from sunset_predictor.poster import (
+            build_noon_caption,
+            generate_prediction_card,
+            post_to_instagram,
+        )
+    except ImportError as e:
+        log.warning(f"Cannot import poster module: {e}")
+        return
+
+    log.info("Instagram: generating prediction card...")
+    card = generate_prediction_card(entry, tip=tip)
+    card_path = day_dir / "prediction_card.jpg"
+    card.save(card_path, "JPEG", quality=95)
+
+    caption = build_noon_caption(entry, tip=tip)
+    log.info("Instagram: posting prediction card")
+    post_to_instagram(card_path, caption)
 
 
 if __name__ == "__main__":

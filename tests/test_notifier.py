@@ -13,24 +13,24 @@ from tests.conftest import MockLocation
 class TestScoreBar:
     def test_zero(self):
         bar = _score_bar(0, width=10)
-        assert bar == "\u2591" * 10
+        assert bar == "\u26aa" * 10
 
     def test_ten(self):
         bar = _score_bar(10, width=10)
-        assert bar == "\u2588" * 10
+        assert bar == "\U0001f7e0" * 10
 
     def test_five(self):
         bar = _score_bar(5, width=10)
-        assert bar == "\u2588" * 5 + "\u2591" * 5
+        assert bar == "\U0001f7e0" * 5 + "\u26aa" * 5
 
     def test_custom_width(self):
         bar = _score_bar(5, width=20)
-        assert bar == "\u2588" * 10 + "\u2591" * 10
+        assert bar == "\U0001f7e0" * 10 + "\u26aa" * 10
 
     def test_rounding(self):
         bar = _score_bar(7.5, width=10)
         filled = int(round(7.5 / 10 * 10))
-        assert bar == "\u2588" * filled + "\u2591" * (10 - filled)
+        assert bar == "\U0001f7e0" * filled + "\u26aa" * (10 - filled)
 
 
 # ---------------------------------------------------------------------------
@@ -202,3 +202,18 @@ class TestFormatMessage:
         msg = format_message(sample_result_8factor, "Test", sun_info, location)
         assert "Windy" not in msg
         assert "Cold" not in msg
+
+    def test_tip_included_when_provided(self, sample_result_8factor, sun_info, location):
+        msg = format_message(
+            sample_result_8factor, "Worth making plans for", sun_info, location,
+            tip="Grab an Aperol Spritz and head to the Jaffa port."
+        )
+        assert "Aperol Spritz" in msg
+        assert "Jaffa" in msg
+
+    def test_tip_absent_when_none(self, sample_result_8factor, sun_info, location):
+        msg = format_message(
+            sample_result_8factor, "Worth making plans for", sun_info, location,
+            tip=None
+        )
+        assert "\U0001f4a1" not in msg

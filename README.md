@@ -2,7 +2,7 @@
 
 **Will tonight's sunset be worth going outside for?**
 
-A scoring engine that predicts sunset quality (1-10) for Tel Aviv using weather data, captures webcam frames to verify predictions with Vision AI, and sends daily alerts via Telegram. Built entirely on free APIs, runs locally on macOS.
+A scoring engine that predicts sunset quality (1-10) for Tel Aviv using weather data, captures webcam frames to verify predictions with Vision AI, sends daily alerts via Telegram, and auto-posts to Instagram. Built entirely on free APIs, runs locally on macOS.
 
 > First calibration result: predicted **6.8**, AI rated **6.5**, human rated **6.0** — the model is already in the ballpark, and the feedback loop is working.
 
@@ -98,6 +98,8 @@ Everything runs for free:
 | Vision AI (primary) | Gemini 2.5 Flash | Free tier (20 req/day) |
 | Vision AI (fallback) | HuggingFace GLM-4.5V | Free credits |
 | Notifications | Telegram Bot API | Free |
+| Instagram posting | [instagrapi](https://github.com/subzeroid/instagrapi) | Free |
+| Image generation | [Pillow](https://python-pillow.org/) | Free |
 | Automation | macOS launchd | Built-in |
 | Language | Python 3.9 | - |
 
@@ -108,7 +110,8 @@ Everything runs for free:
 ```
 sunset-predictor/
 ├── main.py                    # Single prediction to console
-├── daily_sunset.py            # Daily pipeline: predict + capture + rate + notify
+├── daily_sunset.py            # Daily pipeline: predict + capture + rate + notify + post
+├── post_sunset.py             # Instagram posting (prediction card or sunset photo)
 ├── calibrate.py               # Batch Vision AI rating for historical images
 ├── capture_sunset.py          # Legacy predict + capture
 ├── backtest.py                # Historical scoring to CSV
@@ -123,10 +126,11 @@ sunset-predictor/
 │   ├── cameras.py             # Webcam registry (YouTube thumbnails)
 │   ├── rater.py               # Vision AI rating (Gemini + HuggingFace)
 │   ├── notifier.py            # Telegram notification
+│   ├── poster.py              # Instagram posting (cards, overlays, captions)
 │   ├── formatter.py           # CLI output formatting
 │   └── config.py              # Location config (Tel Aviv)
 │
-├── tests/                     # 195 pytest tests
+├── tests/                     # 225 pytest tests
 ├── launchd/                   # macOS scheduled job plists
 ├── calibration_data/
 │   └── example/               # Sample day with prediction, AI rating, and image
@@ -170,8 +174,10 @@ cp .env.example .env
 | `TELEGRAM_CHAT_ID` | For notifications | Your chat ID |
 | `GEMINI_API_KEY` | For Vision AI | From [Google AI Studio](https://aistudio.google.com/) |
 | `HUGGINGFACE_API_KEY` | For Vision AI fallback | From [HuggingFace](https://huggingface.co/settings/tokens) |
+| `INSTAGRAM_USERNAME` | For auto-posting | New Instagram account |
+| `INSTAGRAM_PASSWORD` | For auto-posting | Account password |
 
-The predictor works without any API keys — you just won't get Telegram alerts or Vision AI ratings.
+The predictor works without any API keys — you just won't get Telegram alerts, Vision AI ratings, or Instagram posts.
 
 ---
 
@@ -191,6 +197,14 @@ python3 daily_sunset.py --notify         # Log + send to Telegram
 python3 daily_sunset.py --capture --now  # Log + capture webcam frames now
 ```
 
+### Post to Instagram
+
+```bash
+python3 post_sunset.py --prediction --dry-run  # Generate card without posting
+python3 post_sunset.py --prediction             # Post noon prediction card
+python3 post_sunset.py --photo                  # Post evening sunset photo
+```
+
 ### Rate images with Vision AI
 
 ```bash
@@ -206,14 +220,14 @@ python3 rate_day.py --date 2026-02-25 --score 7.5 --notes "great gap sunset"
 ### Install daily automation (macOS only)
 
 ```bash
-bash launchd/install.sh    # 4 jobs: 08:00, 12:00+notify, 14:00, 16:00+capture
+bash launchd/install.sh    # 4 jobs: 08:00, 12:00+notify+post, 14:00, 16:00+capture+post
 bash launchd/uninstall.sh  # Remove all jobs
 ```
 
 ### Run tests
 
 ```bash
-python3 -m pytest tests/ -v  # 195 tests
+python3 -m pytest tests/ -v  # 225 tests
 ```
 
 ---

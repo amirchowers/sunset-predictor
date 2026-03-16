@@ -9,6 +9,7 @@
         <string>/usr/bin/python3</string>
         <string>/Users/amir.chowers/Desktop/AI Project /sunset-predictor/daily_sunset.py</string>
         <string>--notify</string>
+        <string>--post</string>
     </array>
     <key>WorkingDirectory</key>
     <string>/Users/amir.chowers/Desktop/AI Project /sunset-predictor</string>

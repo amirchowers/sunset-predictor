@@ -27,7 +27,7 @@ def _get_config() -> tuple:
 
 def _score_bar(score: float, width: int = 10) -> str:
     filled = int(round(score / 10 * width))
-    return "\u2588" * filled + "\u2591" * (width - filled)
+    return "\U0001f7e0" * filled + "\u26aa" * (width - filled)
 
 
 def _comfort_warnings(comfort) -> list:
@@ -52,7 +52,8 @@ def _comfort_warnings(comfort) -> list:
     return warnings
 
 
-def format_message(result: dict, verdict: str, sun_info: dict, location) -> str:
+def format_message(result: dict, verdict: str, sun_info: dict, location,
+                   tip: str = None) -> str:
     sunset_local = sun_info["sunset"].astimezone(ZoneInfo(location.timezone))
     date_str = sunset_local.strftime("%A, %b %d")
     time_str = sunset_local.strftime("%H:%M")
@@ -94,17 +95,22 @@ def format_message(result: dict, verdict: str, sun_info: dict, location) -> str:
         lines.append("")
         lines.extend(warnings)
 
+    if tip:
+        lines.append("")
+        lines.append(f"\U0001f4a1 _{tip}_")
+
     return "\n".join(lines)
 
 
-def send_prediction(result: dict, verdict: str, sun_info: dict, location) -> bool:
+def send_prediction(result: dict, verdict: str, sun_info: dict, location,
+                    tip: str = None) -> bool:
     """Send sunset prediction to Telegram. Returns True on success."""
     token, chat_id = _get_config()
     if not token or not chat_id:
         log.info("Telegram not configured (missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID)")
         return False
 
-    text = format_message(result, verdict, sun_info, location)
+    text = format_message(result, verdict, sun_info, location, tip=tip)
     url = f"{TELEGRAM_API.format(token=token)}/sendMessage"
     resp = requests.post(url, json={
         "chat_id": chat_id,

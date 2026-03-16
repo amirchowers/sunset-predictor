@@ -3,3 +3,5 @@ astral
 python-dotenv
 google-generativeai
 pytest
+instagrapi
+Pillow

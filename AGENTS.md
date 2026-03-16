@@ -32,7 +32,8 @@ Both should exit 0.
 
 ### Entry Points (root)
 - `main.py` -- single prediction to console
-- `daily_sunset.py` -- daily pipeline: predict, capture, notify (main automation entrypoint)
+- `daily_sunset.py` -- daily pipeline: predict, capture, notify, post (main automation entrypoint)
+- `post_sunset.py` -- Instagram posting (`--prediction` for noon card, `--photo` for sunset frame)
 - `capture_sunset.py` -- legacy predict + capture (standalone, predates daily_sunset.py)
 - `calibrate.py` -- batch Vision AI rating (`--date YYYY-MM-DD`, rates images and writes AI score to manifest)
 - `backtest.py` -- historical scoring to CSV
@@ -49,6 +50,7 @@ Both should exit 0.
 - `cameras.py` -- webcam registry (6 YouTube live thumbnail sources)
 - `rater.py` -- Vision AI sunset rating (Gemini primary, HuggingFace GLM-4.5V fallback)
 - `notifier.py` -- Telegram notification (sends daily prediction message)
+- `poster.py` -- Instagram auto-posting (prediction cards, score overlays, captions, Gemini tips)
 
 ### Data
 - `calibration_data/YYYY-MM-DD/` -- per-day: `predictions.json`, `manifest.json`, `*.jpg`, `daily.log`
@@ -56,7 +58,7 @@ Both should exit 0.
 
 ### Automation
 - `launchd/` -- 4 macOS plists + install/uninstall scripts
-- Schedule: 08:00, 12:00 (+ `--notify`), 14:00, 16:00 (`--capture`)
+- Schedule: 08:00, 12:00 (+ `--notify --post`), 14:00, 16:00 (`--capture --post`)
 
 ### Docs (`docs/`)
 - `docs/spec.md` -- full project spec (source of truth)
@@ -96,6 +98,8 @@ Keep it practical, shippable, and simple. Prefer interpretable scoring over prem
 **Camera fleet reduced to ashdod_arches only:** Conserves Vision AI credits. `get_cameras()` filters to this one camera. All 6 cameras remain in the `CAMERAS` list for future re-expansion.
 
 **Scoring model is v1:** All weights are hand-tuned. First calibration: predicted 6.8 vs human-rated 6.0. Western sky factor overscores when scattered low/mid clouds exist without cirrus.
+
+**Instagram (instagrapi):** Uses unofficial Instagram API. One post/day from a dedicated account is safe. Store credentials in `.env` (never commit). If Instagram challenges the login (e.g., from a new IP), you may need to verify via the app. The `--dry-run` flag generates images and captions without posting — use for testing.
 
 **Dead ends documented (don't retry):**
 - OpenWeatherMap: slow key activation, worse cloud data than Open-Meteo
@@ -254,8 +258,14 @@ python3 -m pytest tests/ -v                  # run all tests
 python3 main.py                              # prediction to console
 python3 daily_sunset.py                      # log a prediction
 python3 daily_sunset.py --notify             # log prediction + send to Telegram
+python3 daily_sunset.py --notify --post      # log prediction + Telegram + Instagram card
+python3 daily_sunset.py --capture --post     # log prediction + capture + Instagram photo
 python3 daily_sunset.py --capture --now      # log prediction + capture immediately
 python3 daily_sunset.py --capture            # log prediction + capture at sunset window
+python3 post_sunset.py --prediction --dry-run  # generate prediction card (no post)
+python3 post_sunset.py --prediction          # post prediction card to Instagram
+python3 post_sunset.py --photo --dry-run     # generate sunset photo overlay (no post)
+python3 post_sunset.py --photo               # post sunset photo to Instagram
 python3 capture_sunset.py                    # legacy: predict + snapshot
 python3 rate_day.py --date YYYY-MM-DD --score N  # set human rating
 python3 retro_review.py --days 7             # 7-day calibration report
@@ -267,30 +277,34 @@ bash launchd/uninstall.sh                    # remove daily automation
 
 ## Last Session Handoff (2026-03-16)
 
-**What changed (session 4 — Phase 3: Light Cleanup):**
-- Phase 3 complete: dead code removed, docs synced with reality
-  - `sunset_predictor/config.py`: removed `import os` and dead `API_KEY = os.getenv("OPENWEATHERMAP_API_KEY")`
-  - `.env`: removed `OPENWEATHERMAP_API_KEY` line
-  - `capture_sunset.py`: removed `--rate` flag and stub (was never wired up, redundant with `calibrate.py` and `daily_sunset.py --capture`); updated docstring to mark as legacy and point to `daily_sunset.py` / `calibrate.py`
-  - `README.md`: removed `--rate` stub from Known Limitations; added `--notify` to Quick Start; removed Phase 3 from "Next" section
-  - `TESTING.md`: fixed Python version from 3.10+ to 3.9+
-  - `docs/plan.md`: checked off all Phase 3 items
-  - All 195 tests still passing
+**What changed (session 5 — Phase 4 + Instagram Bot):**
+- Phase 4 complete: GitHub repo live at https://github.com/amirchowers/sunset-predictor
+  - Portfolio-grade README with scoring model, mermaid diagram, setup guide
+  - `calibration_data/example/` with sanitized sample day
+  - `docs/future_vision.md` with 4 expansion ideas
+  - `.env.example` for onboarding
+  - `.gitignore` fixed to properly track example/ while excluding other calibration data
+- Instagram auto-posting feature complete:
+  - `sunset_predictor/poster.py`: prediction card generation (Pillow), score overlay, captions, Gemini lifestyle tips, Instagram posting (instagrapi)
+  - `post_sunset.py`: standalone CLI (`--prediction`, `--photo`, `--dry-run`)
+  - `daily_sunset.py`: new `--post` flag wired into noon (prediction card) and capture (sunset photo) flows
+  - `launchd/com.sunset.noon.plist`: added `--post` flag
+  - `launchd/com.sunset.capture.plist`: added `--post` flag
+  - 30 new tests in `tests/test_poster.py` (225 total, all passing)
+  - Dry-run tested: prediction card generates correctly with Gemini tips
 
-**Previous sessions (Phases 0–2):**
+**Previous sessions (Phases 0–3):**
 - Phase 0 verified: `main.py`, `daily_sunset.py`, and `notifier.py` import all exit 0
 - Phase 0.5 complete: test infrastructure, 156 scorer/notifier tests
 - Phase 1 complete: Telegram notification, `@Sunsettlvbot`, `--notify` flag, all 4 launchd jobs
 - Phase 2 complete: Vision AI calibration loop (Gemini + HuggingFace fallback), `calibrate.py`, 195 tests
+- Phase 3 complete: dead code removed, docs synced with reality
 
-**What is next (Phase 4: GitHub Repo + Future Vision):**
-- `.gitignore` already exists — verify it excludes `.env`, `calibration_data/` (except `example/`), `__pycache__/`, `.DS_Store`, `.venv/`, `*.log`
-- `git init` and initial commit
-- Rewrite `README.md` as portfolio-grade: one-line hook, scoring model explanation (counter-intuitive insights), mermaid architecture diagram, calibration loop explanation, tech stack callout, setup guide
-- Create `calibration_data/example/` with one sanitized sample day (`predictions.json`, `manifest.json`, one sample image)
-- Write `docs/future_vision.md`: Instagram auto-posting, push notification app, multi-city expansion, community calibration flywheel
-- Push to GitHub
-- See `docs/plan.md` Phase 4 section and `docs/spec.md` Feature 4 + Feature 5 for full details
+**What is next:**
+- User needs to create Instagram account and add credentials to `.env`
+- Reinstall launchd jobs to pick up new `--post` flags
+- Test live Instagram posting (not just dry-run)
+- Push Instagram feature to GitHub
 
 **Known issues/gotchas discovered in Phase 2:**
 - `gemini-2.0-flash` has zero quota (deprecated). `gemini-2.5-flash` works (5 RPM, 20 RPD free). Already updated in `rater.py`.

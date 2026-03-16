@@ -205,7 +205,35 @@ Verify:
 - If neither key is set: logs "No GEMINI_API_KEY or HUGGINGFACE_API_KEY — skipping Vision AI rating"
 - `manifest.json` updated with images and (optionally) AI rating
 
-## 15) Automated Test Suite
+## 15) Instagram Prediction Card Test (Dry Run)
+
+Command:
+
+```bash
+python3 post_sunset.py --prediction --dry-run
+```
+
+Verify:
+- Generates `calibration_data/YYYY-MM-DD/prediction_card.jpg` (1080x1080 JPEG)
+- Logs show score, Gemini-generated tip, and caption
+- Card has sunset gradient background, score, verdict, and tip text
+- Caption under 2200 characters
+
+## 16) Instagram Sunset Photo Test (Dry Run)
+
+Command:
+
+```bash
+python3 post_sunset.py --photo --dry-run
+```
+
+Verify:
+- Selects best-rated frame from today's captures
+- Generates `calibration_data/YYYY-MM-DD/sunset_post.jpg` with score overlay badge
+- Skips posting if AI score is below 3
+- Caption includes predicted vs actual comparison
+
+## 17) Automated Test Suite
 
 Command:
 
@@ -214,8 +242,8 @@ python3 -m pytest tests/ -v
 ```
 
 Verify:
-- All 195 tests pass
-- Tests cover: scorer (132), notifier (24), rater (29), calibrate (10)
+- All 225 tests pass
+- Tests cover: scorer (132), notifier (24), rater (29), calibrate (10), poster (30)
 
 ## Regression Notes
 

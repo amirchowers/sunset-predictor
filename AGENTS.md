@@ -1,0 +1,319 @@
+# AGENTS.md
+
+Operational instructions for any AI agent working in `sunset-predictor`.
+
+## Working Directory
+
+Always run commands from:
+
+`/Users/amir.chowers/Desktop/AI Project /sunset-predictor`
+
+**WARNING:** The workspace folder name has a **trailing space** (`AI Project ` not `AI Project`). Shell commands must quote the path.
+
+## Getting Started
+
+**Read these files in order:**
+1. `README.md` -- current status, what works, how to run
+2. This `AGENTS.md` -- map, purpose, how to work here
+3. `docs/spec.md` -- full project spec (source of truth for requirements)
+4. `docs/plan.md` -- phased implementation plan with task checklists
+5. `TESTING.md` -- manual QA procedures
+
+**Then verify the foundation:**
+
+```bash
+python3 main.py
+python3 daily_sunset.py
+```
+
+Both should exit 0.
+
+## Project Map
+
+### Entry Points (root)
+- `main.py` -- single prediction to console
+- `daily_sunset.py` -- daily pipeline: predict, capture, notify (main automation entrypoint)
+- `capture_sunset.py` -- legacy predict + capture (standalone, predates daily_sunset.py)
+- `calibrate.py` -- batch Vision AI rating (`--date YYYY-MM-DD`, rates images and writes AI score to manifest)
+- `backtest.py` -- historical scoring to CSV
+- `rate_day.py` -- human rating CLI
+- `retro_review.py` -- 7-day calibration report
+- `discover_cameras.py` -- find YouTube live webcams
+
+### Package: `sunset_predictor/`
+- `config.py` -- `Location` dataclass, `DEFAULT_LOCATION` (Tel Aviv)
+- `sun.py` -- sunset time, azimuth, western sky geometry
+- `fetcher.py` -- Open-Meteo weather + air quality API
+- `scorer.py` -- 8-factor weighted scoring engine, verdicts
+- `formatter.py` -- CLI output formatting
+- `cameras.py` -- webcam registry (6 YouTube live thumbnail sources)
+- `rater.py` -- Vision AI sunset rating (Gemini primary, HuggingFace GLM-4.5V fallback)
+- `notifier.py` -- Telegram notification (sends daily prediction message)
+
+### Data
+- `calibration_data/YYYY-MM-DD/` -- per-day: `predictions.json`, `manifest.json`, `*.jpg`, `daily.log`
+- `calibration_data/retro_7d.csv` and `retro_7d.md` -- weekly reports
+
+### Automation
+- `launchd/` -- 4 macOS plists + install/uninstall scripts
+- Schedule: 08:00, 12:00 (+ `--notify`), 14:00, 16:00 (`--capture`)
+
+### Docs (`docs/`)
+- `docs/spec.md` -- full project spec (source of truth)
+- `docs/plan.md` -- phased implementation plan with checkboxes
+- `docs/product_doc.md` -- product context and background
+- `TESTING.md` -- manual QA checklist (at root for visibility)
+
+## Project Purpose
+
+A sunset quality predictor for Tel Aviv that scores sunsets 1-10 using weather data, captures webcam frames for calibration, and sends daily alerts via Telegram. Dual purpose: a real daily-use product and a portfolio piece for interviews.
+
+Keep it practical, shippable, and simple. Prefer interpretable scoring over premature complexity. Preserve calibration data quality.
+
+## Critical Rules
+
+- Never commit secrets (`.env` stays local, `.gitignore` must exclude it)
+- Never silently swallow errors in data pipelines
+- If behavior differs from docs, update docs in the same session
+- If introducing a flag/feature, implement it fully or hide it
+- Python 3.9 on this Mac -- avoid `X | Y` union type syntax, use `Optional[X]` from `typing`
+- No paid APIs -- Open-Meteo, YouTube thumbnails, and Telegram are all free
+
+## Technical Gotchas
+
+**Webcam thumbnails:** Use `sddefault_live.jpg`, not `maxresdefault_live.jpg`. Small YouTube streams don't generate high-res thumbnails. Already configured correctly in `cameras.py`.
+
+**Thumbnail refresh rate:** Updates roughly every 5 minutes, not real-time. Acceptable for the 30-min sunset capture window.
+
+**Camera fleet:** 5 Ashdod beach cams + 1 Israel multi-cam grid. Ashdod is ~30km south of Tel Aviv, same coastline and sunset conditions. No reliable Tel Aviv-specific live cams exist.
+
+**launchd + Desktop permissions:** `/usr/bin/python3` needs Full Disk Access (System Settings > Privacy > Full Disk Access) to read scripts on Desktop. Already granted.
+
+**Gemini model version matters:** `gemini-2.0-flash` has zero quota (deprecated). Use `gemini-2.5-flash` (5 RPM, 20 RPD free tier). The rater uses `gemini-2.5-flash` as primary.
+
+**HuggingFace free credits reset periodically:** Rating many images can temporarily exhaust credits (402 error), but they come back. The auto-router URL is `https://router.huggingface.co/v1/chat/completions`. GLM-4.5V needs `max_tokens: 500+` or its thinking mode may produce empty content.
+
+**Camera fleet reduced to ashdod_arches only:** Conserves Vision AI credits. `get_cameras()` filters to this one camera. All 6 cameras remain in the `CAMERAS` list for future re-expansion.
+
+**Scoring model is v1:** All weights are hand-tuned. First calibration: predicted 6.8 vs human-rated 6.0. Western sky factor overscores when scattered low/mid clouds exist without cirrus.
+
+**Dead ends documented (don't retry):**
+- OpenWeatherMap: slow key activation, worse cloud data than Open-Meteo
+- Windy.com webcams: paid API only
+- SkylineWebcams: protected streams
+- BeachCam.co.il: no public API
+- ffmpeg + yt-dlp: YouTube CDN blocks non-browser clients
+- `maxresdefault_live.jpg` for small streams: returns channel avatar
+
+## Daily Pipeline
+
+`daily_sunset.py` is the main automation entrypoint:
+- Runs prediction, appends to `calibration_data/YYYY-MM-DD/predictions.json`
+- Can be called multiple times per day; each call stacks a new entry
+- `--capture`: grabs webcam frames around sunset
+- `--capture --now`: captures immediately
+- `--notify`: sends prediction to Telegram
+
+**launchd** triggers it 4 times daily:
+- 08:00 morning prediction
+- 12:00 noon prediction + Telegram notification
+- 14:00 afternoon prediction
+- 16:00 capture job (waits dynamically for sunset)
+
+Only the 16:00 job requires the Mac to be awake. Install via `bash launchd/install.sh`.
+
+## Iron Laws
+
+These are absolute. Not guidelines. Not suggestions.
+
+1. **NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST.** Write code before the test? Delete it. Start over. Don't keep it as "reference." Don't "adapt" it. Delete means delete.
+2. **NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.** If you haven't traced the data flow and formed a hypothesis, you cannot propose fixes.
+3. **NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE.** Run the command. Read the output. Then claim the result. "Should work" is not evidence.
+
+## TDD Workflow
+
+**Red-Green-Refactor for every change:**
+
+1. **RED:** Write one minimal failing test showing what should happen. Run it. Confirm it fails.
+2. **GREEN:** Write the simplest code to pass the test. Run it. Confirm it passes and no other tests break.
+3. **REFACTOR:** Clean up. Keep tests green.
+
+**Test infrastructure:** `pytest` in `tests/` directory. Run with `python3 -m pytest tests/ -v`.
+
+**What to test:**
+- `sunset_predictor/scorer.py` — threshold functions and weighted scoring (retrofit existing code)
+- `sunset_predictor/rater.py` — response parsing, fallback logic (TDD for new code)
+- `sunset_predictor/notifier.py` — message formatting (TDD for new code)
+- `calibrate.py` — manifest reading/writing (TDD for new code)
+- Don't mock external APIs unless unavoidable — test the logic around them
+
+**Red flags — all mean delete code, start over:**
+- Code before test
+- Test passes immediately on first run
+- "I already manually tested it"
+- "Too simple to test"
+- Modifying tests to make them pass
+
+## Systematic Debugging
+
+When something breaks, follow this order. Complete each phase before proceeding.
+
+1. **Root cause investigation:** Read error messages carefully. Reproduce consistently. Check recent changes (`git diff`). Trace data flow to find where bad values originate.
+2. **Pattern analysis:** Find working examples in the codebase. Compare against the broken code. List every difference.
+3. **Hypothesis testing:** Form a single hypothesis ("X is the root cause because Y"). Test with the smallest possible change. One variable at a time.
+4. **Implementation:** Write a failing test that reproduces the bug. Fix the root cause. Verify fix. If 3+ fixes fail, STOP — question the architecture and discuss with me.
+
+## Feedback Loops and Log Observability
+
+This project runs as launchd automation — you can't watch it live. Design for agent self-sufficiency:
+
+- **launchd logs:** `calibration_data/launchd_morning.log`, `launchd_noon.log`, `launchd_afternoon.log`, `launchd_capture.log` — read these to diagnose pipeline issues
+- **Per-day logs:** `calibration_data/YYYY-MM-DD/daily.log` — one-line-per-run append log
+- **All logging uses `logging` module** with timestamps (`%(asctime)s [%(levelname)s] %(message)s`). Keep this consistent in new code.
+- **Fail loud:** If an API call fails, log the error with context (URL, status code, response body). Never silently return empty data.
+- **Close feedback loops without screenshots:** Every feature should be verifiable via terminal commands, log files, or JSON output. Minimize situations that require manual browser/phone testing.
+
+## Engineering Principles
+
+**YAGNI:** Don't build features until they're needed. Every line of code is a liability. Build the simplest thing that works, add complexity only when reality demands it. If something is in the "Parking Lot" section of `docs/spec.md`, don't build it.
+
+**DRY:** Every piece of knowledge must have a single representation. When you see duplication, extract it. When you're about to copy-paste, stop and abstract. This project already has some duplication between `capture_sunset.py` and `daily_sunset.py` -- don't add more.
+
+**Simple over easy:** Choose designs that keep concerns independent. Favor composition over interleaving. Separate data from behavior, configuration from code. Judge an approach by the long-term properties of the system it produces, not by how easy it is to start.
+
+**Minimize dependencies:** Default to stdlib and existing packages first. This project uses `requests`, `astral`, `python-dotenv`, and `google-generativeai`. Before adding a new package, explain why and what alternatives you considered. Prefer `requests` to call APIs directly over adding wrapper libraries (e.g., the Telegram notifier uses raw `requests` instead of `python-telegram-bot`).
+
+**Concrete examples in this project:**
+- `notifier.py` uses `requests` directly instead of adding `python-telegram-bot` -- fewer deps, same result
+- `rater.py` HuggingFace fallback should use `requests` to the Inference API, not add `huggingface-hub`
+- Scoring factors are simple threshold functions, not ML models -- interpretable and debuggable
+- Each module (`scorer`, `fetcher`, `cameras`, `notifier`, `rater`) is independent and swappable
+
+## Collaboration Style
+
+- Explain your approach before writing code
+- Explain at a low level -- define technical terms before using them
+- Code comments explain "why" not "what"
+- Pause to check in, don't barrel ahead
+- When requirements are unclear, state your assumption explicitly and proceed
+
+## Phase Wrap-Up Protocol
+
+Before considering any phase or task complete, follow this protocol:
+
+1. **Run verification and show output:**
+   - `python3 main.py` exits 0
+   - `python3 daily_sunset.py` exits 0
+   - Any phase-specific tests from TESTING.md -- show actual output
+   - Never say "tests should pass" -- show the evidence
+
+2. **Verify phase objectives:**
+   - Read `docs/plan.md` objectives line by line
+   - Check each off with evidence
+   - State what remains if anything is incomplete
+
+3. **Update documentation:**
+   - `README.md` -- current status
+   - `TESTING.md` -- QA steps for new features
+   - `docs/spec.md` / `docs/plan.md` -- if implementation differed from plan, update with rationale
+
+4. **Walk me through testing:**
+   - Concrete steps: "Run X, you should see Y"
+   - Not "test the feature"
+
+5. **Wait for my confirmation before proceeding to next phase.**
+
+6. **Memory sweep:** Ask "What did I learn that future sessions need to know?" Update AGENTS.md if anything.
+
+7. **Offer to commit** with a clear message referencing the phase.
+
+CRITICAL: Never say "Phase complete, moving on" without my explicit sign-off.
+
+## Version Control
+
+- Propose commit messages and wait for confirmation
+- Format: `type: description` with bullet points
+- Branch strategy: `feature/description` or `fix/description` -- never commit directly to main
+- Never commit: `.env`, `calibration_data/` (except `example/`), `__pycache__/`, `.DS_Store`
+- Always commit: `requirements.txt`, `.env.example` (not `.env`)
+
+## Continuous Documentation
+
+As you work, update docs immediately -- don't wait for wrap-up:
+- **AGENTS.md**: gotchas discovered, patterns that work, things that would confuse a future agent
+- **docs/spec.md**: when implementation differs from plan
+- **README.md**: when status or capabilities change
+- **TESTING.md**: when new features need QA steps
+
+Ask yourself: "What would confuse a future agent about this?"
+
+## Common Commands
+
+```bash
+python3 -m pytest tests/ -v                  # run all tests
+python3 main.py                              # prediction to console
+python3 daily_sunset.py                      # log a prediction
+python3 daily_sunset.py --notify             # log prediction + send to Telegram
+python3 daily_sunset.py --capture --now      # log prediction + capture immediately
+python3 daily_sunset.py --capture            # log prediction + capture at sunset window
+python3 capture_sunset.py                    # legacy: predict + snapshot
+python3 rate_day.py --date YYYY-MM-DD --score N  # set human rating
+python3 retro_review.py --days 7             # 7-day calibration report
+python3 calibrate.py --date YYYY-MM-DD        # batch Vision AI rating
+python3 backtest.py                          # historical scoring
+bash launchd/install.sh                      # install daily automation
+bash launchd/uninstall.sh                    # remove daily automation
+```
+
+## Last Session Handoff (2026-03-16)
+
+**What changed (session 3 — Phase 2: Vision AI Calibration Loop):**
+- Phase 2 complete: Vision AI calibration loop working end-to-end
+  - `sunset_predictor/rater.py` refactored:
+    - Extracted `_parse_rating_response()` — shared JSON parser for all backends, handles markdown-wrapped JSON and embedded JSON in text
+    - Renamed Gemini function to `rate_single_image_gemini()`
+    - Added `rate_single_image_huggingface()` — uses raw `requests` to HF Inference API (GLM-4.5V via `https://router.huggingface.co/v1/chat/completions` auto-router)
+    - New `rate_single_image()` coordinator — tries Gemini first, catches quota/auth errors, falls back to HuggingFace
+    - `rate_sunset_images()` now uses fallback-aware `rate_single_image()`
+  - `calibrate.py` created: standalone batch rating CLI, `--date YYYY-MM-DD` (default: today), reads images from `calibration_data/`, runs rater, writes AI score to `manifest.json`
+  - `daily_sunset.py` wired up: `rate_images_if_possible()` now checks for either `GEMINI_API_KEY` or `HUGGINGFACE_API_KEY`, and is called after capture with results passed to `save_manifest()`
+  - `tests/test_rater.py`: 29 tests (response parsing, HuggingFace integration, fallback logic, aggregation)
+  - `tests/test_calibrate.py`: 10 tests (date parsing, image finding, manifest I/O)
+  - All 195 tests passing: `python3 -m pytest tests/ -v`
+  - First real calibration run: `calibrate.py --date 2026-02-25` rated 16/57 images before HF free credits exhausted. Sunset-window images averaged AI 4.4 vs human 6.0.
+- `HUGGINGFACE_API_KEY` added to `.env`
+- `huggingface_hub` installed in `.venv` (used only for initial testing, not imported by any project code)
+
+**Previous sessions (Phases 0, 0.5, 1):**
+- Phase 0 verified: `main.py`, `daily_sunset.py`, and `notifier.py` import all exit 0
+- Phase 0.5 complete: test infrastructure, 156 scorer/notifier tests
+- Phase 1 complete: Telegram notification, `@Sunsettlvbot`, `--notify` flag, all 4 launchd jobs
+
+**What is next (Phase 3: Light Cleanup):**
+- Remove dead `OPENWEATHERMAP_API_KEY` from `.env` and `config.py`
+- Fix `capture_sunset.py --rate` stub to use the real Gemini/HuggingFace rater
+- Update `README.md` to reflect current reality (4 jobs, Telegram, Vision AI, `calibrate.py`)
+- Update `TESTING.md` to match (4 jobs, Telegram test, Vision AI test)
+- See `docs/plan.md` Phase 3 section for full details
+
+**After Phase 3 (Phase 4):**
+- GitHub repo — `.gitignore`, git init, portfolio README, `calibration_data/example/`, `docs/future_vision.md`
+
+**Known issues/gotchas discovered in Phase 2:**
+- `gemini-2.0-flash` has zero quota (deprecated). `gemini-2.5-flash` works (5 RPM, 20 RPD free). Already updated in `rater.py`.
+- Gemini 2.5 uses thinking tokens — needs `max_output_tokens: 1024` (not 256) or the content may be truncated.
+- HuggingFace credits are not permanent — they reset periodically. 402 errors are temporary.
+- GLM-4.5V uses a thinking mode: it has `reasoning_content` (thinking trace) and `content` (answer). When content is empty, we fall back to `reasoning_content`.
+- GLM-4.5V sometimes wraps JSON in text — the `_parse_rating_response` regex fallback handles this.
+- The HF auto-router URL is `https://router.huggingface.co/v1/chat/completions` (NOT `router.huggingface.co/hf-inference/models/...` which returns 404 for VLM models).
+- AI rates daytime captures as score 1 — correct behavior but drags down the average in batch runs.
+- Camera fleet reduced to `ashdod_arches` only to conserve credits (4 imgs/day vs 24).
+- `google.generativeai` library is deprecated — Google recommends switching to `google.genai`. Works for now but should migrate in a future phase.
+- Python 3.9 on this Mac — use `Optional[X]` not `X | None`.
+- `_score_western_near` uses strict `>` comparisons (not `>=`) — boundary values at exact thresholds fall to the next bucket. Tests document this precisely.
+
+**Troubleshooting: missing Telegram notifications:**
+- launchd only fires when the Mac is awake and running. If the user reports not receiving a noon Telegram notification, the most likely cause is the Mac was asleep or lid-closed at 12:00.
+- macOS will catch up on the most recent missed `StartCalendarInterval` job when the Mac wakes — but only the latest missed one, not all.
+- If the Mac was powered off at the scheduled time, the job is missed entirely with no catch-up.
+- The 16:00 capture job is most at risk since it may fall after the user closes the laptop for the day.

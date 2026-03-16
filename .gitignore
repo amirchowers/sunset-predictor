@@ -1,0 +1,9 @@
+.env
+calibration_data/
+!calibration_data/example/
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+.pytest_cache/
+*.log

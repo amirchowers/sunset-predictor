@@ -43,12 +43,12 @@ Full spec: `docs/spec.md` (same directory as this file)
 - ✅ Update `README.md` to reflect current reality (4 jobs, correct times, new features)
 - ✅ Update `TESTING.md` to match (4 jobs, Telegram test, Vision AI test, Python 3.9)
 
-### Phase 4: GitHub Repo + Future Vision
-- ☐ Create `.gitignore`
-- ☐ `git init` and initial commit
-- ☐ Rewrite `README.md` as portfolio-grade (architecture diagram, scoring explanation, setup guide)
-- ☐ Create `calibration_data/example/` with one sanitized sample day
-- ☐ Write `docs/future_vision.md`
+### Phase 4: GitHub Repo + Future Vision ✅
+- ✅ Create `.gitignore`
+- ✅ `git init` and initial commit
+- ✅ Rewrite `README.md` as portfolio-grade (architecture diagram, scoring explanation, setup guide)
+- ✅ Create `calibration_data/example/` with one sanitized sample day
+- ✅ Write `docs/future_vision.md`
 - ☐ Push to GitHub
 
 ---

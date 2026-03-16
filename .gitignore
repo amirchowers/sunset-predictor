@@ -1,5 +1,5 @@
 .env
-calibration_data/
+calibration_data/*
 !calibration_data/example/
 __pycache__/
 *.pyc

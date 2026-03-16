@@ -1,0 +1,38 @@
+[
+  {
+    "predicted_at_local": "16:47",
+    "hours_before_sunset": 0.8,
+    "score": 6.8,
+    "verdict": "Worth making plans for",
+    "scores": {
+      "cloud_high": 4.0,
+      "cloud_low_mid": 8.0,
+      "western_near": 8.0,
+      "western_far": 5.0,
+      "humidity": 6.0,
+      "visibility": 10.0,
+      "air_quality": 5.0,
+      "weather_condition": 8.0
+    },
+    "raw": {
+      "cloud_cover_pct": 19,
+      "humidity_pct": 65,
+      "visibility_km": 38.4,
+      "pm2_5": 3.9,
+      "condition": "mainly clear",
+      "condition_id": 801,
+      "western_near_clouds_pct": 60,
+      "western_far_clouds_pct": 72,
+      "cloud_high_pct": 0,
+      "cloud_mid_pct": 6,
+      "cloud_low_pct": 14
+    },
+    "comfort": {
+      "temp_c": 16.9,
+      "feels_like_c": 15.3,
+      "wind_kmh": 11.6,
+      "wind_gusts_kmh": 30.2
+    },
+    "sunset_local": "17:35"
+  }
+]

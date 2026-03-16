@@ -1,0 +1,21 @@
+{
+  "date": "2026-02-25",
+  "images": [
+    "example/ashdod_arches_t1527.jpg"
+  ],
+  "cameras": [
+    "ashdod_arches"
+  ],
+  "predicted_score": 6.8,
+  "prediction_count": 1,
+  "ai_score": 6.5,
+  "ai_ratings": [
+    {
+      "score": 6.5,
+      "reasoning": "The image clearly shows the sun setting on the horizon with a warm orange glow, but lacks dramatic cloud formations or a wider range of vivid sky colors for a higher score.",
+      "image": "ashdod_arches_t1527.jpg"
+    }
+  ],
+  "human_score": 6.0,
+  "human_notes": "High end of watchable. Clear sky, orange-red sun touching water, nice reflection. No clouds for dramatic color."
+}

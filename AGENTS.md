@@ -284,14 +284,19 @@ bash launchd/uninstall.sh                    # remove daily automation
   - `docs/future_vision.md` with 4 expansion ideas
   - `.env.example` for onboarding
   - `.gitignore` fixed to properly track example/ while excluding other calibration data
-- Instagram auto-posting feature complete:
-  - `sunset_predictor/poster.py`: prediction card generation (Pillow), score overlay, captions, Gemini lifestyle tips, Instagram posting (instagrapi)
+- Instagram auto-posting feature built and committed:
+  - `sunset_predictor/poster.py`: prediction card generation (Pillow), Gemini lifestyle tips (rotating themes), Instagram posting (instagrapi), score overlay, captions
   - `post_sunset.py`: standalone CLI (`--prediction`, `--photo`, `--dry-run`)
-  - `daily_sunset.py`: new `--post` flag wired into noon (prediction card) and capture (sunset photo) flows
+  - `daily_sunset.py`: new `--post` flag wired into noon flow only (prediction card). Tip generated once, shared to both Telegram and Instagram.
   - `launchd/com.sunset.noon.plist`: added `--post` flag
-  - `launchd/com.sunset.capture.plist`: added `--post` flag
-  - 30 new tests in `tests/test_poster.py` (225 total, all passing)
+  - Evening auto-post REMOVED from capture flow — webcam frames (640x480) too low-res for Instagram. Capture still runs for calibration.
+  - Telegram score bar updated from black blocks to warm orange/white circles
+  - Telegram message now includes Gemini lifestyle tip (when available)
+  - Evening post threshold set to 6.5 (only "Worth making plans for" sunsets)
+  - Caption CTA: "Share your sunset photo tonight and tag us!" (encourages UGC instead of posting low-res webcam frames)
+  - 228 tests total (31 poster + 26 notifier), all passing
   - Dry-run tested: prediction card generates correctly with Gemini tips
+  - Pushed to GitHub
 
 **Previous sessions (Phases 0–3):**
 - Phase 0 verified: `main.py`, `daily_sunset.py`, and `notifier.py` import all exit 0
@@ -301,10 +306,16 @@ bash launchd/uninstall.sh                    # remove daily automation
 - Phase 3 complete: dead code removed, docs synced with reality
 
 **What is next:**
-- User needs to create Instagram account and add credentials to `.env`
-- Reinstall launchd jobs to pick up new `--post` flags
-- Test live Instagram posting (not just dry-run)
-- Push Instagram feature to GitHub
+- User needs to create Instagram account and add `INSTAGRAM_USERNAME` and `INSTAGRAM_PASSWORD` to `.env`
+- Reinstall launchd jobs: `bash launchd/uninstall.sh && bash launchd/install.sh` (to pick up `--post` on noon job)
+- Test live Instagram posting: `python3 post_sunset.py --prediction` (not dry-run)
+- Tomorrow's noon job will be the first to include a Gemini lifestyle tip in Telegram (quota resets daily, was exhausted during testing today)
+- The Instagram page strategy: noon prediction card is the main product, user manually uploads good sunset photos when they have them, CTA encourages followers to share their own photos
+
+**GitHub push credentials:**
+- User has a fine-grained PAT (Contents: Read and write) — can be regenerated at https://github.com/settings/personal-access-tokens/new
+- Push method: temporarily set remote URL with token, push, then reset URL to clean version
+- `git remote set-url origin https://amirchowers:<TOKEN>@github.com/amirchowers/sunset-predictor.git && git push && git remote set-url origin https://github.com/amirchowers/sunset-predictor.git`
 
 **Known issues/gotchas discovered in Phase 2:**
 - `gemini-2.0-flash` has zero quota (deprecated). `gemini-2.5-flash` works (5 RPM, 20 RPD free). Already updated in `rater.py`.

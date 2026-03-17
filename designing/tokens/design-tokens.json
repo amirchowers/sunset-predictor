@@ -1,0 +1,300 @@
+{
+  "_meta": {
+    "name": "Sunset Predictor Design Tokens",
+    "version": "1.0.0",
+    "direction": "The Instrument (Direction A)",
+    "date": "2026-03-17",
+    "spec": "Desiging/briefs/visual-system-v1.md"
+  },
+
+  "color": {
+    "bg": {
+      "primary":        { "hex": "#0D0D0F", "rgb": [13, 13, 15] },
+      "surface":        { "hex": "#16161A", "rgb": [22, 22, 26] },
+      "surface_border": { "hex": "#2A2A30", "rgb": [42, 42, 48] }
+    },
+    "text": {
+      "primary":   { "hex": "#F0EDE8", "rgb": [240, 237, 232] },
+      "secondary": { "hex": "#C8BFA8", "rgb": [200, 191, 168] },
+      "tertiary":  { "hex": "#6B6560", "rgb": [107, 101, 96] }
+    },
+    "separator": { "hex": "#2A2A30", "rgb": [42, 42, 48] },
+
+    "accent": {
+      "_description": "Score-responsive accent. Interpolate linearly between anchors for fractional scores.",
+      "anchors": [
+        { "score": 1.0,  "hex": "#6B7B8D", "rgb": [107, 123, 141] },
+        { "score": 2.0,  "hex": "#7D8A96", "rgb": [125, 138, 150] },
+        { "score": 3.0,  "hex": "#8B9DAF", "rgb": [139, 157, 175] },
+        { "score": 4.0,  "hex": "#A8946E", "rgb": [168, 148, 110] },
+        { "score": 5.0,  "hex": "#C4956A", "rgb": [196, 149, 106] },
+        { "score": 6.0,  "hex": "#D99B52", "rgb": [217, 155, 82] },
+        { "score": 7.0,  "hex": "#E8A84C", "rgb": [232, 168, 76] },
+        { "score": 8.0,  "hex": "#F0B83A", "rgb": [240, 184, 58] },
+        { "score": 9.0,  "hex": "#F5C542", "rgb": [245, 197, 66] },
+        { "score": 10.0, "hex": "#FF8C42", "rgb": [255, 140, 66] }
+      ]
+    }
+  },
+
+  "typography": {
+    "font_family": "Inter",
+    "font_source": "https://github.com/rsms/inter/releases",
+    "font_dir": "sunset-predictor/assets/fonts/",
+    "font_files": [
+      "Inter-Light.ttf",
+      "Inter-Regular.ttf",
+      "Inter-Medium.ttf",
+      "Inter-SemiBold.ttf",
+      "Inter-Bold.ttf",
+      "Inter-ExtraBold.ttf"
+    ],
+
+    "scale": {
+      "feed": {
+        "score_number":  { "size": 140, "weight": 800, "case": "as-is",     "tracking_pct": -3,  "color": "accent" },
+        "score_unit":    { "size": 48,  "weight": 300, "case": "as-is",     "tracking_pct": 0,   "color": "text.tertiary" },
+        "verdict":       { "size": 34,  "weight": 500, "case": "sentence",  "tracking_pct": 0,   "color": "text.secondary" },
+        "sunset_time":   { "size": 32,  "weight": 600, "case": "as-is",     "tracking_pct": 1,   "color": "text.primary" },
+        "label":         { "size": 14,  "weight": 500, "case": "uppercase", "tracking_pct": 10,  "color": "text.tertiary" },
+        "drivers":       { "size": 21,  "weight": 400, "case": "sentence",  "tracking_pct": 0,   "color": "text.secondary" },
+        "tip_body":      { "size": 21,  "weight": 400, "case": "sentence",  "tracking_pct": 0,   "color": "text.primary" },
+        "tip_label":     { "size": 13,  "weight": 500, "case": "uppercase", "tracking_pct": 10,  "color": "text.tertiary" },
+        "brand_mark":    { "size": 14,  "weight": 500, "case": "uppercase", "tracking_pct": 14,  "color": "text.tertiary" }
+      },
+      "story": {
+        "score_number":  { "size": 180, "weight": 800, "case": "as-is",     "tracking_pct": -3,  "color": "accent" },
+        "score_unit":    { "size": 56,  "weight": 300, "case": "as-is",     "tracking_pct": 0,   "color": "text.tertiary" },
+        "verdict":       { "size": 40,  "weight": 500, "case": "sentence",  "tracking_pct": 0,   "color": "text.secondary" },
+        "sunset_time":   { "size": 38,  "weight": 600, "case": "as-is",     "tracking_pct": 1,   "color": "text.primary" },
+        "label":         { "size": 16,  "weight": 500, "case": "uppercase", "tracking_pct": 10,  "color": "text.tertiary" },
+        "drivers":       { "size": 24,  "weight": 400, "case": "sentence",  "tracking_pct": 0,   "color": "text.secondary" },
+        "tip_body":      { "size": 24,  "weight": 400, "case": "sentence",  "tracking_pct": 0,   "color": "text.primary" },
+        "tip_label":     { "size": 13,  "weight": 500, "case": "uppercase", "tracking_pct": 10,  "color": "text.tertiary" },
+        "brand_mark":    { "size": 14,  "weight": 500, "case": "uppercase", "tracking_pct": 14,  "color": "text.tertiary" }
+      }
+    },
+
+    "weight_map": {
+      "300": "Inter-Light.ttf",
+      "400": "Inter-Regular.ttf",
+      "500": "Inter-Medium.ttf",
+      "600": "Inter-SemiBold.ttf",
+      "700": "Inter-Bold.ttf",
+      "800": "Inter-ExtraBold.ttf"
+    }
+  },
+
+  "spacing": {
+    "xs":  8,
+    "sm":  16,
+    "md":  24,
+    "lg":  40,
+    "xl":  56,
+    "2xl": 80,
+    "3xl": 96
+  },
+
+  "layout": {
+    "feed": {
+      "canvas_w": 1080,
+      "canvas_h": 1080,
+      "margin_left": 96,
+      "margin_right": 96,
+      "margin_top": 80,
+      "margin_bottom": 56,
+      "content_width": 888,
+      "alignment": "left",
+
+      "zones": {
+        "header": {
+          "y_start": 80,
+          "elements": [
+            { "role": "label",       "text": "TONIGHT'S SUNSET", "y_offset": 0 },
+            { "role": "sunset_time", "y_offset": 30 },
+            { "role": "label",       "text_source": "city",     "y_offset": 74 }
+          ]
+        },
+        "score": {
+          "y_start": 228,
+          "elements": [
+            { "role": "score_number", "y_offset": 0, "note": "score and /10 share baseline" },
+            { "role": "score_bar",    "y_offset": 152, "bar_height": 4, "bar_radius": 2, "track_color": "bg.surface", "fill_color": "accent" }
+          ]
+        },
+        "info": {
+          "y_start": 424,
+          "elements": [
+            { "role": "verdict",   "y_offset": 0,   "format": "— {verdict} —" },
+            { "role": "separator", "y_offset": 50,  "width": 60, "height": 1 },
+            { "role": "label",     "y_offset": 74,  "text": "WHY" },
+            { "role": "drivers",   "y_offset": 96,  "line_height": 30 }
+          ]
+        },
+        "tip": {
+          "y_start": 618,
+          "optional": true,
+          "container": {
+            "bg": "bg.surface",
+            "border": "bg.surface_border",
+            "border_width": 1,
+            "border_radius": 12,
+            "padding": 24
+          },
+          "elements": [
+            { "role": "tip_label", "text": "TODAY",  "y_offset": 0 },
+            { "role": "tip_body",  "y_offset": 24, "max_width_minus_padding": true }
+          ]
+        },
+        "footer": {
+          "y_anchor": "bottom",
+          "y_value": 1024,
+          "elements": [
+            { "role": "brand_mark", "text": "SUNSET PREDICTOR" }
+          ]
+        }
+      }
+    },
+
+    "story": {
+      "canvas_w": 1080,
+      "canvas_h": 1920,
+      "margin_left": 80,
+      "margin_right": 80,
+      "margin_top": 180,
+      "margin_bottom": 220,
+      "content_width": 920,
+      "alignment": "left",
+
+      "zones": {
+        "header": {
+          "y_start": 180,
+          "elements": [
+            { "role": "label",       "text": "TONIGHT'S SUNSET", "y_offset": 0 },
+            { "role": "sunset_time", "y_offset": 32 },
+            { "role": "label",       "text_source": "city",     "y_offset": 80 }
+          ]
+        },
+        "score": {
+          "y_start": 354,
+          "elements": [
+            { "role": "score_number", "y_offset": 0 },
+            { "role": "score_bar",    "y_offset": 192, "bar_height": 6, "bar_radius": 3, "track_color": "bg.surface", "fill_color": "accent" }
+          ]
+        },
+        "info": {
+          "y_start": 616,
+          "elements": [
+            { "role": "verdict",   "y_offset": 0,   "format": "— {verdict} —" },
+            { "role": "separator", "y_offset": 60,  "width": 60, "height": 1 },
+            { "role": "label",     "y_offset": 90,  "text": "WHY" },
+            { "role": "drivers",   "y_offset": 116, "line_height": 34 }
+          ]
+        },
+        "tip": {
+          "y_start": 860,
+          "optional": true,
+          "container": {
+            "bg": "bg.surface",
+            "border": "bg.surface_border",
+            "border_width": 1,
+            "border_radius": 12,
+            "padding": 28
+          },
+          "elements": [
+            { "role": "tip_label", "text": "TODAY",  "y_offset": 0 },
+            { "role": "tip_body",  "y_offset": 28 }
+          ]
+        },
+        "footer": {
+          "y_anchor": "bottom",
+          "y_value": 1700,
+          "elements": [
+            { "role": "brand_mark", "text": "SUNSET PREDICTOR" }
+          ]
+        }
+      }
+    }
+  },
+
+  "components": {
+    "score_bar": {
+      "description": "Horizontal bar showing score as proportion of 10",
+      "track_color": "bg.surface",
+      "fill_color": "accent",
+      "fill_formula": "(score / 10.0) * content_width",
+      "min_fill_px": 4,
+      "feed": { "height": 4, "radius": 2 },
+      "story": { "height": 6, "radius": 3 }
+    },
+
+    "tip_container": {
+      "description": "Optional container for lifestyle tip",
+      "renders_when": "tip is not null and not empty string",
+      "bg": "bg.surface",
+      "border_color": "bg.surface_border",
+      "border_width": 1,
+      "border_radius": 12,
+      "padding": 24
+    },
+
+    "separator": {
+      "width": 60,
+      "height": 1,
+      "color": "separator",
+      "alignment": "left"
+    },
+
+    "evening_badge": {
+      "description": "Score overlay badge for sunset photo posts",
+      "width": 260,
+      "height": 110,
+      "bg": "bg.primary",
+      "bg_opacity": 0.88,
+      "border_color": "accent",
+      "border_opacity": 0.35,
+      "border_width": 1,
+      "border_radius": 8,
+      "position": "bottom-right",
+      "position_margin": 32,
+      "padding": 16,
+      "internal_alignment": "center",
+      "elements": [
+        { "role": "score", "size": 40, "weight": 700, "color": "accent", "format": "{score}/10" },
+        { "role": "verdict", "size": 15, "weight": 500, "color": "text.secondary", "max_chars": 20 }
+      ]
+    }
+  },
+
+  "copy": {
+    "verdict": {
+      "length": "2-6 words",
+      "card_format": "— {text} —",
+      "tone": "declarative, calm"
+    },
+    "drivers": {
+      "format": "noun phrases, not sentences",
+      "case": "lowercase start unless proper noun",
+      "count": "2-3"
+    },
+    "tip": {
+      "max_sentences": 2,
+      "never_mention": "score",
+      "tone": "specific, grounded"
+    },
+    "action_line": {
+      "min_score": 7,
+      "form": "imperative",
+      "max_words": 6
+    },
+    "banned_words": [
+      "amazing", "stunning", "beautiful", "gorgeous", "breathtaking",
+      "incredible", "spectacular", "magnificent", "awesome",
+      "unbelievable", "perfect"
+    ],
+    "emoji_rules": {
+      "on_card": "never",
+      "in_caption": "max 2, minimal style only (sun, pin, thermometer)"
+    }
+  }
+}

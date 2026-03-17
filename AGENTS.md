@@ -40,6 +40,7 @@ Both should exit 0.
 - `rate_day.py` -- human rating CLI
 - `retro_review.py` -- 7-day calibration report
 - `discover_cameras.py` -- find YouTube live webcams
+- `render_card.py` -- CLI tool for generating sample prediction cards (feed/story). Usage: `python3 render_card.py --score 7.6 --format both`
 
 ### Package: `sunset_predictor/`
 - `config.py` -- `Location` dataclass, `DEFAULT_LOCATION` (Tel Aviv)
@@ -51,6 +52,16 @@ Both should exit 0.
 - `rater.py` -- Vision AI sunset rating (Gemini primary, HuggingFace GLM-4.5V fallback)
 - `notifier.py` -- Telegram notification (sends daily prediction message)
 - `poster.py` -- Instagram auto-posting (prediction cards, score overlays, captions, Gemini tips)
+- `renderer.py` -- **NEW** HTML/CSS card renderer (Playwright + headless Chromium). Replaces Pillow-based rendering in `poster.py`. Token-driven: reads all visual values from `designing/tokens/design-tokens.json`.
+
+### Design System: `designing/`
+- `briefs/brand-brief.md` -- brand identity, audience, voice, positioning
+- `briefs/visual-system-v1.md` -- full design system spec: colors, typography, spacing, layout, components, copy rules
+- `tokens/design-tokens.json` -- machine-readable design tokens (renderer reads this at runtime)
+- `critiques/direction-review-v1.md` -- creative direction review + 3 visual directions, recommended "The Instrument"
+- `critiques/design-qa-v1.md` -- QA report against visual system spec (P0/P1/P2 issues with exact fixes)
+- `notes/implementation-v1.md` -- renderer implementation notes, architecture, remaining work
+- `prompts/` -- prompt templates used to drive each design phase
 
 ### Data
 - `calibration_data/YYYY-MM-DD/` -- per-day: `predictions.json`, `manifest.json`, `*.jpg`, `daily.log`
@@ -275,7 +286,17 @@ bash launchd/install.sh                      # install daily automation
 bash launchd/uninstall.sh                    # remove daily automation
 ```
 
-## Last Session Handoff (2026-03-16, session 6)
+## Last Session Handoff (2026-03-17, session 7)
+
+**What changed (session 7 — Design System & Renderer):**
+- Full design system built: brand brief → creative direction critique → visual system spec → design tokens → HTML/CSS renderer → design QA
+- `designing/` folder added to repo with all design artifacts (briefs, tokens, critiques, notes, prompts)
+- `sunset_predictor/renderer.py` — new HTML/CSS rendering engine using Playwright + headless Chromium, fully driven by `design-tokens.json`
+- `render_card.py` — CLI tool for generating sample cards
+- `requirements.txt` updated with `playwright` dependency
+- Renderer tokens path corrected: now reads from `designing/tokens/design-tokens.json` inside the repo (was previously reading from `../Desiging/` outside the repo)
+- `.gitignore` updated to exclude `output/` (generated sample images)
+- QA report written to `designing/critiques/design-qa-v1.md` with P0/P1/P2 issues and exact fixes
 
 **What changed (session 6 — Instagram Go-Live):**
 - Instagram account created: `@sunsetpredictor`
@@ -283,11 +304,13 @@ bash launchd/uninstall.sh                    # remove daily automation
   - Registered with work email (amir.chowers@unity3d.com) — user plans to swap to personal email before leaving the company
   - 2FA is OFF (required for instagrapi API login)
   - Account warmed up: profile pic set, follows added, bio written
-- First live Instagram post succeeded: prediction card with 7.6/10 score and hardcoded lifestyle tip
+- First live Instagram post succeeded (2026-03-16): prediction card with 7.6/10 score and hardcoded lifestyle tip
+- Second live post succeeded (2026-03-17): full automated pipeline — Telegram + Instagram + Gemini tip ("Grab a felafel and perch yourself on the ancient walls")
 - `INSTAGRAM_USERNAME` and `INSTAGRAM_PASSWORD` added to `.env`
 - instagrapi 2.3.0 installed with Python 3.9 compatibility patches (see gotchas below)
-- AGENTS.md updated with instagrapi patching instructions
-- launchd jobs confirmed already loaded with `--post` on noon plist — no reinstall needed
+- **launchd jobs reinstalled** — the previously loaded jobs were stale (had `--notify --post` in the plist file but the loaded jobs were from an older version without those flags). Ran `bash launchd/uninstall.sh && bash launchd/install.sh` to fix. This was the root cause of missing Telegram notifications for several days.
+- Human rating logged: 2026-03-16 predicted 7.6, user rated 5.5. Overscoring pattern: clouds blocked sun at horizon instead of catching light. Model can't distinguish cloud position relative to sun.
+- Pushed to GitHub (2 commits: session 5 handoff + session 6 handoff)
 
 **Previous sessions (Phases 0–5):**
 - Phase 0 verified: `main.py`, `daily_sunset.py`, and `notifier.py` import all exit 0
@@ -300,11 +323,12 @@ bash launchd/uninstall.sh                    # remove daily automation
 - Session 6: Instagram account created, first live post successful
 
 **What is next:**
-- Verify Gemini lifestyle tip appears in Telegram noon message (2026-03-17 noon — quota was exhausted 2026-03-16 from testing, resets daily)
-- After confirming Telegram tip looks good: noon launchd job should auto-post to Instagram daily (already configured)
-- Push latest changes to GitHub (AGENTS.md updates from this session)
-- Future design work: improve prediction card branding, typography, color palette, logo
+- Everything is live and automated: Telegram + Instagram + Gemini tips fire daily at noon via launchd
+- **Design system v1 built (session 7):** Brand brief → creative direction → visual system → design tokens → HTML/CSS renderer → QA. See `designing/critiques/design-qa-v1.md` for the QA report with prioritized fixes.
+- **Immediate next step:** Implement QA fixes from `design-qa-v1.md` (P0: text wrapping, flow layout, contrast; P1: story no-tip layout, low-score bar visibility; P2: tabular-nums, negative driver display)
+- **Then:** Wire `renderer.py` into the daily pipeline (replace Pillow calls in `poster.py`), rewrite evening photo overlay badge, add local fonts for offline determinism, write tests for `_lerp_color()` and `_format_score()`
 - Future: swap Instagram email from work to personal before user leaves company
+- Future: improve scoring model — western sky/cloud factor overscores when clouds block the sun vs catch its light (see 2026-03-16 calibration: predicted 7.6, actual 5.5)
 
 **GitHub push credentials:**
 - User has a fine-grained PAT (Contents: Read and write) — can be regenerated at https://github.com/settings/personal-access-tokens/new
@@ -312,6 +336,11 @@ bash launchd/uninstall.sh                    # remove daily automation
 - `git remote set-url origin https://amirchowers:<TOKEN>@github.com/amirchowers/sunset-predictor.git && git push && git remote set-url origin https://github.com/amirchowers/sunset-predictor.git`
 
 **Known issues/gotchas (cumulative):**
+- **Design tokens are the source of truth for rendering.** All visual values (colors, typography, spacing, layout) live in `designing/tokens/design-tokens.json`. The renderer reads this at runtime — change the JSON, change the output. Don't hardcode visual values in `renderer.py`.
+- **Playwright + Chromium required for rendering.** `pip3 install playwright && python3 -m playwright install chromium`. Adds ~400MB. Renders take ~1-2s per card (vs instant with Pillow). Acceptable for 2 cards/day.
+- **Renderer uses Google Fonts CDN for Inter.** Requires internet at render time. Future: bundle local `.woff2` files for offline determinism.
+- **Score accent color interpolation:** RGB linear lerp between 10 anchor points in the tokens file. `renderer._lerp_color()` handles fractional scores. Test edge cases: score 1.0, 10.0, and values between anchors.
+- **QA report has open P0 issues:** See `designing/critiques/design-qa-v1.md`. These must be fixed before wiring the renderer into the live pipeline.
 - `gemini-2.0-flash` has zero quota (deprecated). `gemini-2.5-flash` works (5 RPM, 20 RPD free). Already updated in `rater.py`.
 - Gemini 2.5 uses thinking tokens — needs `max_output_tokens: 1024` (not 256) or the content may be truncated.
 - Gemini lifestyle tip quota: 20 RPD free tier. If exhausted from testing, tips silently skip until next day. The noon Telegram/Instagram post still works, just without the tip line.

@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from sunset_predictor.renderer import render_feed_card, render_story_card
+from sunset_predictor.scorer import get_verdict
 
 SAMPLE_PREDICTION = {
     "score": 7.6,
@@ -61,6 +62,8 @@ def main():
 
     if args.score is not None:
         pred["score"] = args.score
+        if not args.verdict:
+            pred["verdict"] = get_verdict(args.score)
     if args.verdict:
         pred["verdict"] = args.verdict
 

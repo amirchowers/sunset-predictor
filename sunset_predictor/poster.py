@@ -14,6 +14,8 @@ from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
+from sunset_predictor.scorer import FACTOR_LABELS, FACTOR_LABELS_LOW
+
 log = logging.getLogger("poster")
 
 CARD_SIZE = (1080, 1080)
@@ -162,20 +164,20 @@ def overlay_score(image_path: Path, score: float, verdict: str) -> Image.Image:
 # ---------------------------------------------------------------------------
 
 def _top_factors(prediction: dict, n: int = 2) -> list:
-    """Return the top N scoring factors by score value."""
+    """Return the top N scoring factors by score value.
+
+    For scores >= 5.0: highest-scoring factors with positive phrasing.
+    For scores < 5.0: lowest-scoring factors with negative phrasing.
+    """
     scores = prediction.get("scores", {})
-    factor_names = {
-        "cloud_high": "high cirrus clouds",
-        "cloud_low_mid": "clear low sky",
-        "western_near": "clear western horizon",
-        "western_far": "western cloud canvas",
-        "humidity": "low humidity",
-        "visibility": "excellent visibility",
-        "air_quality": "good aerosol scattering",
-        "weather_condition": "ideal weather",
-    }
-    sorted_factors = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    return [factor_names.get(k, k) for k, _ in sorted_factors[:n]]
+    overall = prediction.get("score", 10.0)
+    if overall < 5.0:
+        sorted_factors = sorted(scores.items(), key=lambda x: x[1])
+        labels = FACTOR_LABELS_LOW
+    else:
+        sorted_factors = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        labels = FACTOR_LABELS
+    return [labels.get(k, k) for k, _ in sorted_factors[:n]]
 
 
 def build_noon_caption(prediction: dict, tip: Optional[str] = None) -> str:

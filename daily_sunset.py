@@ -274,6 +274,9 @@ def save_manifest(day_dir: Path, predictions: list, images: list, cameras_used: 
 # ---------------------------------------------------------------------------
 
 def main():
+    from dotenv import load_dotenv
+    load_dotenv()
+
     parser = argparse.ArgumentParser(description="Daily sunset prediction + capture")
     parser.add_argument("--capture", action="store_true",
                         help="Also capture webcam frames around sunset")
@@ -369,23 +372,24 @@ def _generate_lifestyle_tip(entry: dict):
 def _post_prediction_card(entry: dict, day_dir: Path, tip):
     """Generate and post a prediction card to Instagram."""
     try:
-        from sunset_predictor.poster import (
-            build_noon_caption,
-            generate_prediction_card,
-            post_to_instagram,
-        )
+        from sunset_predictor.renderer import render_feed_card
+        from sunset_predictor.poster import build_noon_caption, post_to_instagram
     except ImportError as e:
-        log.warning(f"Cannot import poster module: {e}")
+        log.warning(f"Cannot import renderer/poster module: {e}")
         return
 
     log.info("Instagram: generating prediction card...")
-    card = generate_prediction_card(entry, tip=tip)
+    card = render_feed_card(entry, tip=tip)
     card_path = day_dir / "prediction_card.jpg"
     card.save(card_path, "JPEG", quality=95)
 
     caption = build_noon_caption(entry, tip=tip)
     log.info("Instagram: posting prediction card")
-    post_to_instagram(card_path, caption)
+    success = post_to_instagram(card_path, caption)
+    if success:
+        log.info("Instagram: posted successfully")
+    else:
+        log.error("Instagram: posting failed")
 
 
 if __name__ == "__main__":

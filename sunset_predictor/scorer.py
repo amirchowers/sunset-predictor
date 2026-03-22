@@ -5,6 +5,30 @@ Weights and thresholds are educated guesses for v1 — designed to be
 recalibrated against real sunset quality data later.
 """
 
+FACTOR_LABELS = {
+    "cloud_high": "high cirrus clouds",
+    "cloud_low_mid": "clear low sky",
+    "cloud_cover": "favorable cloud cover",
+    "western_near": "clear western horizon",
+    "western_far": "western cloud canvas",
+    "humidity": "low humidity",
+    "visibility": "excellent visibility",
+    "air_quality": "good aerosol scattering",
+    "weather_condition": "ideal weather",
+}
+
+FACTOR_LABELS_LOW = {
+    "cloud_high": "no high cloud color",
+    "cloud_low_mid": "heavy low overcast",
+    "cloud_cover": "unfavorable cloud cover",
+    "western_near": "blocked western sky",
+    "western_far": "no western cloud canvas",
+    "humidity": "high humidity",
+    "visibility": "poor visibility",
+    "air_quality": "poor air quality",
+    "weather_condition": "unfavorable weather",
+}
+
 WEIGHTS = {
     "cloud_high": 0.15,
     "cloud_low_mid": 0.10,

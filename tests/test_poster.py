@@ -112,6 +112,36 @@ def sample_ai_rating():
 
 
 # ---------------------------------------------------------------------------
+# Top Factors — driver phrasing for captions
+# ---------------------------------------------------------------------------
+
+class TestTopFactors:
+    def test_high_score_returns_positive_phrasing(self, sample_prediction):
+        from sunset_predictor.poster import _top_factors
+        factors = _top_factors(sample_prediction, n=2)
+        assert len(factors) == 2
+        for f in factors:
+            assert "blocked" not in f
+            assert "heavy" not in f
+            assert "poor" not in f
+
+    def test_low_score_returns_negative_phrasing(self, sample_prediction_low):
+        from sunset_predictor.poster import _top_factors
+        factors = _top_factors(sample_prediction_low, n=2)
+        from sunset_predictor.scorer import FACTOR_LABELS_LOW
+        assert all(f in FACTOR_LABELS_LOW.values() for f in factors)
+
+    def test_low_score_returns_lowest_scoring_factors(self, sample_prediction_low):
+        from sunset_predictor.poster import _top_factors
+        factors = _top_factors(sample_prediction_low, n=2)
+        from sunset_predictor.scorer import FACTOR_LABELS_LOW
+        # cloud_low_mid=1.0 and western_near=1.0 are the lowest
+        expected_keys = {"cloud_low_mid", "western_near"}
+        expected_labels = {FACTOR_LABELS_LOW[k] for k in expected_keys}
+        assert set(factors) == expected_labels
+
+
+# ---------------------------------------------------------------------------
 # Card Generation
 # ---------------------------------------------------------------------------
 

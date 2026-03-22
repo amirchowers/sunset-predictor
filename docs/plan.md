@@ -49,7 +49,35 @@ Full spec: `docs/spec.md` (same directory as this file)
 - ✅ Rewrite `README.md` as portfolio-grade (architecture diagram, scoring explanation, setup guide)
 - ✅ Create `calibration_data/example/` with one sanitized sample day
 - ✅ Write `docs/future_vision.md`
-- ☐ Push to GitHub
+- ✅ Push to GitHub
+
+### Phase 5: Card Quality — Drivers Fix + Renderer Tests ✅
+- ✅ Extract shared `FACTOR_LABELS` / `FACTOR_LABELS_LOW` to `scorer.py` (DRY — remove duplication from renderer.py + poster.py)
+- ✅ Fix `_top_drivers()` in `renderer.py`: for overall score < 5.0, sort ascending and use negative phrasing
+- ✅ Fix `_top_factors()` in `poster.py`: same logic for caption "Why:" line
+- ✅ Add tests for `_top_drivers` / `_top_factors` — high score (positive phrasing) and low score (negative phrasing)
+- ✅ Add tests for `renderer._lerp_color` — boundary values (1.0, 10.0), mid-values, between anchors
+- ✅ Add tests for `renderer._format_score` — integers strip ".0", fractional keep one decimal
+- ✅ Add tests for `renderer._tracking` — zero returns "normal", non-zero returns px value
+- ✅ Fix `render_card.py`: auto-derive verdict from score via `get_verdict()` when --score is used without --verdict
+- ✅ Verify: `python3 -m pytest tests/ -v` — 253 passed, `python3 main.py` and `python3 daily_sunset.py` exit 0
+
+### Phase 6: OpenWeather Integration
+☐ Create `OpenWeatherFetcher` class matching `OpenMeteoFetcher` interface (same return format for scorer)
+☐ Add `OPENWEATHER_API_KEY` to `.env.example`
+☐ Wire into `daily_sunset.py`: use OpenWeather when key present, fall back to Open-Meteo
+☐ Add retry logic (2 attempts, 15s timeout)
+☐ Log weather source used in each prediction
+☐ Add competitor benchmark fetch (sunset-predictor.com API) — store in manifest, no dependency
+☐ Tests for new fetcher: response mapping, fallback logic, retry behavior
+☐ Verify: predictions run with both sources, existing tests pass
+
+### Phase 7: Complete Renderer Migration
+☐ Wire `renderer.render_feed_card` into `post_sunset.py --prediction` (replace Pillow `generate_prediction_card`)
+☐ Port evening photo overlay badge from Pillow to renderer
+☐ Bundle local Inter `.woff2` font files for offline/deterministic renders
+☐ Update tests: `test_poster.py` card generation tests should use renderer
+☐ Verify: `post_sunset.py --prediction --dry-run` and `post_sunset.py --photo --dry-run` produce correct output
 
 ---
 
@@ -201,3 +229,78 @@ Full spec: `docs/spec.md` (same directory as this file)
 3. Verify `.env` is NOT in the repo: `git ls-files .env` returns empty
 4. Read `README.md` -- should have mermaid diagram, scoring explanation, setup guide
 5. Read `docs/future_vision.md` -- should cover 4 expansion ideas
+
+---
+
+## Phase 5: Card Quality — Drivers Fix + Renderer Tests
+
+**Goal:** Fix the P2-1 bug where low-score cards show contradictory positive drivers ("excellent visibility" on a score-2 card), and add test coverage for renderer helper functions.
+
+**Affected Files:**
+- `sunset_predictor/scorer.py` -- add `FACTOR_LABELS` and `FACTOR_LABELS_LOW` dicts (DRY: single source of truth for factor display names)
+- `sunset_predictor/renderer.py` -- refactor `_top_drivers()` to use shared labels, invert sort for scores < 5.0
+- `sunset_predictor/poster.py` -- refactor `_top_factors()` to use shared labels, same low-score logic
+- `tests/test_renderer.py` (new) -- tests for `_lerp_color`, `_format_score`, `_tracking`, `_top_drivers`
+- `tests/test_poster.py` -- add tests for `_top_factors` with high/low score predictions
+
+**Done means:**
+- A score-2 prediction card shows negative drivers like "blocked western sky" and "heavy low overcast" instead of "excellent visibility"
+- A score-8 prediction card still shows positive drivers like "clear western horizon"
+- Factor label dicts live in `scorer.py` only (no duplication in renderer.py / poster.py)
+- `_lerp_color`, `_format_score`, `_tracking` all have test coverage
+- All tests pass: `python3 -m pytest tests/ -v`
+
+**Test it:**
+1. Run `python3 -m pytest tests/ -v` -- all tests pass
+2. Run `python3 render_card.py --score 2 --format feed` -- card should show negative driver phrasing
+3. Run `python3 render_card.py --score 8 --format feed` -- card should show positive driver phrasing
+4. Run `python3 main.py` -- exits 0
+5. Run `python3 daily_sunset.py` -- exits 0
+
+---
+
+## Phase 6: OpenWeather Integration
+
+**Goal:** Fix prediction accuracy by using OpenWeather as the primary weather source. Open-Meteo has consistently over-predicted (predicted 7.6 vs actual 5.5, predicted 6.4 vs actual 2.0). The competitor (sunset-predictor.com) which uses OpenWeather correctly predicted both bad sunsets.
+
+**Affected Files:**
+- `sunset_predictor/fetcher.py` -- add `OpenWeatherFetcher` class matching existing `OpenMeteoFetcher` interface
+- `daily_sunset.py` -- use `OpenWeatherFetcher` when `OPENWEATHER_API_KEY` is set, fall back to `OpenMeteoFetcher`
+- `.env.example` -- add `OPENWEATHER_API_KEY`
+- `tests/test_fetcher.py` (new) -- response mapping, fallback, retry tests
+
+**Done means:**
+- With `OPENWEATHER_API_KEY` set, predictions use OpenWeather data
+- Without the key, predictions use Open-Meteo (zero-config fallback)
+- API response is correctly mapped to scorer input format
+- Retry logic: 2 attempts with 15s timeout
+- Weather source is logged in each prediction for debugging
+
+**Test it:**
+1. Run `python3 -m pytest tests/ -v` -- all tests pass
+2. Run `python3 daily_sunset.py` -- logs should show which weather source was used
+3. Compare a prediction with each source: set/unset `OPENWEATHER_API_KEY` and compare scores
+
+---
+
+## Phase 7: Complete Renderer Migration
+
+**Goal:** Eliminate the Pillow rendering path. One rendering system (HTML/CSS renderer) for all visual output.
+
+**Affected Files:**
+- `post_sunset.py` -- use `renderer.render_feed_card` instead of `poster.generate_prediction_card`
+- `sunset_predictor/renderer.py` -- add evening photo overlay function (replaces `poster.overlay_score`)
+- `sunset_predictor/renderer.py` -- bundle local Inter `.woff2` fonts, remove Google Fonts CDN dependency
+- `tests/test_poster.py` -- update card generation tests to use renderer
+
+**Done means:**
+- `post_sunset.py --prediction --dry-run` generates a card using the HTML/CSS renderer
+- `post_sunset.py --photo --dry-run` generates an evening overlay using the renderer
+- No Pillow font or gradient code is called anywhere in the live pipeline
+- Cards render identically with or without internet (local fonts)
+
+**Test it:**
+1. Run `python3 post_sunset.py --prediction --dry-run` -- generates feed card in output/
+2. Run `python3 post_sunset.py --photo --dry-run` -- generates evening photo with overlay
+3. Disconnect from internet, render a card -- should work with local fonts
+4. Run `python3 -m pytest tests/ -v` -- all tests pass

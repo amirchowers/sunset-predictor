@@ -24,7 +24,7 @@ Sunset Predictor as a precision instrument. A beautiful gauge reading on a dark 
 | `bg.surface-border` | `#2A2A30` | 42, 42, 48 | Container borders, separators |
 | `text.primary` | `#F0EDE8` | 240, 237, 232 | Main text (warm white, not pure) |
 | `text.secondary` | `#C8BFA8` | 200, 191, 168 | Verdict, time, supporting text |
-| `text.tertiary` | `#6B6560` | 107, 101, 96 | Labels, footer, metadata |
+| `text.tertiary` | `#8A8480` | 138, 132, 128 | Labels, footer, metadata |
 | `separator` | `#2A2A30` | 42, 42, 48 | Thin rules between zones |
 
 ### Score-responsive accent palette

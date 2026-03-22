@@ -18,6 +18,8 @@ from typing import Optional
 
 from PIL import Image
 
+from sunset_predictor.scorer import FACTOR_LABELS, FACTOR_LABELS_LOW
+
 log = logging.getLogger("renderer")
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -68,23 +70,21 @@ def accent_color_for_score(score: float) -> str:
 # Data helpers
 # ---------------------------------------------------------------------------
 
-_FACTOR_NAMES = {
-    "cloud_high": "high cirrus clouds",
-    "cloud_low_mid": "clear low sky",
-    "western_near": "clear western horizon",
-    "western_far": "western cloud canvas",
-    "humidity": "low humidity",
-    "visibility": "excellent visibility",
-    "air_quality": "good aerosol scattering",
-    "weather_condition": "ideal weather",
-}
-
-
 def _top_drivers(prediction: dict, n: int = 2) -> list:
-    """Extract top N scoring factors as readable noun phrases."""
+    """Extract top N scoring factors as readable noun phrases.
+
+    For scores >= 5.0: highest-scoring factors with positive phrasing.
+    For scores < 5.0: lowest-scoring factors with negative phrasing.
+    """
     scores = prediction.get("scores", {})
-    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    return [_FACTOR_NAMES.get(k, k) for k, _ in ranked[:n]]
+    overall = prediction.get("score", 10.0)
+    if overall < 5.0:
+        ranked = sorted(scores.items(), key=lambda x: x[1])
+        labels = FACTOR_LABELS_LOW
+    else:
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        labels = FACTOR_LABELS
+    return [labels.get(k, k) for k, _ in ranked[:n]]
 
 
 def _tracking(size: int, pct: float) -> str:
@@ -123,7 +123,8 @@ def _build_html(
 
     score = prediction["score"]
     score_display = _format_score(score)
-    verdict = html_mod.escape(prediction["verdict"])
+    verdict_text = prediction["verdict"].replace(" \u2014 ", ", ").strip(" \u2014")
+    verdict = html_mod.escape(verdict_text)
     sunset_time = prediction.get("sunset_local", "")
     city = html_mod.escape(prediction.get("city", "TEL AVIV"))
     accent = _lerp_color(score, c["accent"]["anchors"])
@@ -142,14 +143,16 @@ def _build_html(
     city_y   = hy + z["header"]["elements"][2]["y_offset"]
 
     sy = z["score"]["y_start"]
+    iy = z["info"]["y_start"]
+
+    if tip is None and fmt == "story":
+        sy = 440
+        iy = 740
+
     score_y = sy + z["score"]["elements"][0]["y_offset"]
     bar_y   = sy + z["score"]["elements"][1]["y_offset"]
 
-    iy = z["info"]["y_start"]
-    verdict_y = iy + z["info"]["elements"][0]["y_offset"]
-    sep_y     = iy + z["info"]["elements"][1]["y_offset"]
-    why_y     = iy + z["info"]["elements"][2]["y_offset"]
-    drivers_y = iy + z["info"]["elements"][3]["y_offset"]
+    verdict_y = iy
     driver_lh = z["info"]["elements"][3]["line_height"]
 
     tz = z["tip"]
@@ -158,6 +161,10 @@ def _build_html(
     tip_br  = tz["container"]["border_radius"]
 
     footer_y = z["footer"]["y_value"]
+
+    sp_md = tokens["spacing"]["md"]
+    sp_sm = tokens["spacing"]["sm"]
+    tip_gap = tokens["spacing"]["lg"] if fmt == "feed" else tokens["spacing"]["xl"]
 
     s = scale
 
@@ -173,15 +180,15 @@ def _build_html(
     if drivers:
         divs = "".join(f"<div>{html_mod.escape(d)}</div>" for d in drivers)
         drivers_el = (
-            f'<div class="el lbl" style="top:{why_y}px">WHY</div>\n'
-            f'    <div class="el drivers" style="top:{drivers_y}px">{divs}</div>'
+            f'<div class="lbl">WHY</div>\n'
+            f'        <div class="drivers">{divs}</div>'
         )
 
     tip_el = ""
     if tip:
         tip_safe = html_mod.escape(tip)
         tip_el = (
-            f'<div class="tip-box" style="top:{tip_y}px">\n'
+            f'<div class="tip-box">\n'
             f'        <div class="tip-lbl">TODAY</div>\n'
             f'        <div class="tip-txt">{tip_safe}</div>\n'
             f"    </div>"
@@ -222,6 +229,7 @@ body{{
   font-weight:{s["score_number"]["weight"]};
   letter-spacing:{_tracking(s["score_number"]["size"], s["score_number"]["tracking_pct"])};
   color:{accent};line-height:1;
+  font-variant-numeric:tabular-nums;
 }}
 .sc-unit{{
   font-size:{s["score_unit"]["size"]}px;
@@ -232,18 +240,23 @@ body{{
   width:{cw}px;height:{bar["height"]}px;
   background:{c["bg"]["surface"]["hex"]};
   border-radius:{bar["radius"]}px;overflow:hidden;
+  box-shadow:0 0 0 1px {accent}33;
 }}
 .bar-fill{{
   height:100%;width:{fill_w:.0f}px;
   background:{accent};
   border-radius:{bar["radius"]}px;
 }}
+.info-block{{width:{cw}px}}
 .verdict{{
   font-size:{s["verdict"]["size"]}px;
   font-weight:{s["verdict"]["weight"]};
   color:{c["text"]["secondary"]["hex"]};
+  overflow-wrap:break-word;word-wrap:break-word;
+  margin-bottom:{sp_md}px;
 }}
-.sep{{width:60px;height:1px;background:{c["separator"]["hex"]}}}
+.sep{{width:60px;height:1px;background:{c["separator"]["hex"]};margin-bottom:{sp_md}px}}
+.drivers{{margin-top:{tokens["spacing"]["xs"]}px}}
 .drivers div{{
   font-size:{s["drivers"]["size"]}px;
   font-weight:{s["drivers"]["weight"]};
@@ -251,7 +264,7 @@ body{{
   line-height:{driver_lh}px;
 }}
 .tip-box{{
-  position:absolute;left:{ml}px;width:{cw}px;
+  margin-top:{tip_gap}px;width:100%;
   background:{c["bg"]["surface"]["hex"]};
   border:1px solid {c["bg"]["surface_border"]["hex"]};
   border-radius:{tip_br}px;padding:{tip_pad}px;
@@ -261,7 +274,7 @@ body{{
   font-weight:{s["tip_label"]["weight"]};
   text-transform:uppercase;
   letter-spacing:{_tracking(s["tip_label"]["size"], s["tip_label"]["tracking_pct"])};
-  color:{c["text"]["tertiary"]["hex"]};margin-bottom:8px;
+  color:{c["text"]["tertiary"]["hex"]};margin-bottom:{sp_sm}px;
 }}
 .tip-txt{{
   font-size:{s["tip_body"]["size"]}px;
@@ -288,11 +301,12 @@ body{{
         <div class="bar-track"><div class="bar-fill"></div></div>
     </div>
 
-    <div class="el verdict" style="top:{verdict_y}px">\u2014 {verdict} \u2014</div>
-    <div class="el sep" style="top:{sep_y}px"></div>
-    {drivers_el}
-
-    {tip_el}
+    <div class="el info-block" style="top:{verdict_y}px">
+        <div class="verdict">\u2014 {verdict} \u2014</div>
+        <div class="sep"></div>
+        {drivers_el}
+        {tip_el}
+    </div>
 
     <div class="el brand" style="top:{footer_y}px">SUNSET PREDICTOR</div>
 </div>

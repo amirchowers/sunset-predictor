@@ -16,7 +16,7 @@
     "text": {
       "primary":   { "hex": "#F0EDE8", "rgb": [240, 237, 232] },
       "secondary": { "hex": "#C8BFA8", "rgb": [200, 191, 168] },
-      "tertiary":  { "hex": "#6B6560", "rgb": [107, 101, 96] }
+      "tertiary":  { "hex": "#8A8480", "rgb": [138, 132, 128] }
     },
     "separator": { "hex": "#2A2A30", "rgb": [42, 42, 48] },
 
